@@ -2,6 +2,8 @@ import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
+import API_URL from "../config";
+
 export default function Historial() {
   const { user, token } = useContext(AuthContext);
   const [registros, setRegistros] = useState([]);
@@ -18,7 +20,7 @@ export default function Historial() {
     if (!window.confirm("¿Seguro que deseas eliminar este registro?")) return;
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/prediccion/${id}`, {
+      const response = await fetch(`${API_URL}/prediccion/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -38,9 +40,7 @@ export default function Historial() {
   useEffect(() => {
     const fetchHistorial = async () => {
       try {
-        const response = await fetch(
-          "http://127.0.0.1:8000/prediccion/historial",
-          {
+        const response = await fetch(`${API_URL}/prediccion/historial`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
