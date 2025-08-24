@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 import API_URL from "../config";
 
@@ -9,11 +10,13 @@ export default function Historial() {
   const [registros, setRegistros] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const navigate = useNavigate();
+
   const handleRepeat = (registro) => {
     // Guardamos los valores en localStorage
     localStorage.setItem("formData", JSON.stringify(registro));
     // Redirigimos al formulario
-    window.location.href = "/formulario";
+    navigate("/formulario");
   };
 
   const handleDelete = async (id) => {
@@ -41,11 +44,10 @@ export default function Historial() {
     const fetchHistorial = async () => {
       try {
         const response = await fetch(`${API_URL}/prediccion/historial`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (!response.ok) throw new Error("Error al obtener historial");
         const data = await response.json();
         setRegistros(data);
