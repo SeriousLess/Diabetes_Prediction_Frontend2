@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 
 import API_URL from "../config";
 
@@ -84,9 +85,9 @@ const Login = () => {
         </form>
         <p className="mt-6 text-center text-gray-600">
           ¿No tienes cuenta?{" "}
-          <a href="/register" className="text-blue-600 hover:underline">
+          <Link to="/register" className="text-blue-600 hover:underline">
             Regístrate
-          </a>
+          </Link>
         </p>
         <button
           onClick={() => navigate("/")}
