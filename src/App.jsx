@@ -1,16 +1,22 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navbar from "src/components/Navbar.jsx";
 import Home from "./pages/Home";
 import Formulario from "./pages/Formulario";
+import Login from "./pages/Login";
+import Historial from "./pages/Historial";
+import Register from "./pages/Register";
 
-export default function App() {
+function App() {
   return (
     <Router>
-      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/formulario" element={<Formulario />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/historial" element={<Historial />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </Router>
   );
 }
+
+export default App;
