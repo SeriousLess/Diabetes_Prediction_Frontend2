@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import { Link } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext"; // 👈 agregado
+import { AuthContext } from "../context/AuthContext";
+import { getFactorMessages } from "../utils/factores";
 
 import API_URL from "../config";
 
@@ -37,6 +38,8 @@ export default function Formulario() {
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [factores, setFactores] = useState([]);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -50,7 +53,6 @@ export default function Formulario() {
     setResultado(null);
 
     try {
-      
       console.log("Usuario actual:", user);
       console.log("Token actual:", token);
 
@@ -72,6 +74,15 @@ export default function Formulario() {
       if (!response.ok) throw new Error("Error en la solicitud");
       const data = await response.json();
       setResultado(data);
+
+      // Generar explicaciones SOLO en frontend (reglas)
+      const mensajes = getFactorMessages(
+        Object.fromEntries(
+          Object.entries(formData).map(([k, v]) => [k, Number(v)])
+        ),
+        { limit: 12 }
+      );
+      setFactores(mensajes);
     } catch (error) {
       console.error(error);
       alert("Error en la predicción.");
@@ -217,35 +228,31 @@ export default function Formulario() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-800">
-                  Recomendaciones:
-                </h4>
-                {resultado.prediccion === 1 ? (
-                  <ul className="list-disc pl-5 space-y-2 text-sm text-gray-700">
-                    <li>Consulta con un médico para una evaluación completa</li>
-                    <li>
-                      Considera realizar cambios en tu dieta y aumentar
-                      actividad física
-                    </li>
-                    <li>Monitorea regularmente tus niveles de glucosa</li>
-                    <li>
-                      Reduce el consumo de azúcares y carbohidratos refinados
-                    </li>
+              {/* 🔎 Factores que influyen (reglas basadas en SHAP global) */}
+              {factores.length > 0 && (
+                <div className="mt-4 p-5 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                    Factores que influyen en tu riesgo
+                  </h3>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-yellow-900">
+                    {factores.map((f, i) => (
+                      <li key={i}>{f.msg}</li>
+                    ))}
                   </ul>
-                ) : (
-                  <ul className="list-disc pl-5 space-y-2 text-sm text-gray-700">
-                    <li>Mantén tus hábitos saludables actuales</li>
-                    <li>Realiza chequeos médicos periódicos</li>
-                    <li>Continúa con actividad física regular</li>
-                    <li>Lleva una dieta balanceada</li>
-                  </ul>
-                )}
-              </div>
+                  <p className="mt-3 text-xs text-yellow-800/80">
+                    Nota: Estas son reglas simples basadas en tu entrada y la
+                    importancia global del modelo. No reemplazan la evaluación
+                    clínica.
+                  </p>
+                </div>
+              )}
 
               <div className="mt-6 flex justify-center">
                 <button
-                  onClick={() => setResultado(null)}
+                  onClick={() => {
+                    setResultado(null);
+                    setFactores([]);
+                  }}
                   className="text-blue-600 hover:text-blue-800 font-medium text-sm"
                 >
                   Realizar otra evaluación
