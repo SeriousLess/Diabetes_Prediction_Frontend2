@@ -40,6 +40,12 @@ export default function Formulario() {
 
   const [factores, setFactores] = useState([]);
 
+  const getRiskLevel = (prob) => {
+    if (prob >= 0.66) return "alto";
+    if (prob >= 0.33) return "medio";
+    return "bajo";
+  };
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -183,50 +189,73 @@ export default function Formulario() {
                 Resultado
               </h2>
 
-              <div
-                className={`p-6 rounded-lg mb-6 ${
-                  resultado.prediccion === 1
-                    ? "bg-red-50 border-l-4 border-red-500"
-                    : "bg-green-50 border-l-4 border-green-500"
-                }`}
-              >
-                <div className="flex items-center justify-center space-x-4">
-                  <div
-                    className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center ${
-                      resultado.prediccion === 1 ? "bg-red-100" : "bg-green-100"
-                    }`}
-                  >
-                    <span
-                      className={`text-2xl font-bold ${
-                        resultado.prediccion === 1
-                          ? "text-red-600"
-                          : "text-green-600"
+              {/* 👇 en lugar del bloque anterior */}
+              {resultado &&
+                (() => {
+                  const nivel = getRiskLevel(resultado.probabilidad);
+                  return (
+                    <div
+                      className={`p-6 rounded-lg mb-6 ${
+                        nivel === "alto"
+                          ? "bg-red-50 border-l-4 border-red-500"
+                          : nivel === "medio"
+                          ? "bg-yellow-50 border-l-4 border-yellow-500"
+                          : "bg-green-50 border-l-4 border-green-500"
                       }`}
                     >
-                      {resultado.prediccion === 1 ? "!" : "✓"}
-                    </span>
-                  </div>
-                  <div>
-                    <h3
-                      className={`text-xl font-bold ${
-                        resultado.prediccion === 1
-                          ? "text-red-600"
-                          : "text-green-600"
-                      }`}
-                    >
-                      {resultado.prediccion === 1
-                        ? "Riesgo de Diabetes"
-                        : "Sin Riesgo"}
-                    </h3>
-                    <p className="text-gray-600">
-                      Probabilidad:{" "}
-                      <span className="font-bold">
-                        {(resultado.probabilidad * 100).toFixed(2)}%
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
+                      <div className="flex items-center justify-center space-x-4">
+                        <div
+                          className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center ${
+                            nivel === "alto"
+                              ? "bg-red-100"
+                              : nivel === "medio"
+                              ? "bg-yellow-100"
+                              : "bg-green-100"
+                          }`}
+                        >
+                          <span
+                            className={`text-2xl font-bold ${
+                              nivel === "alto"
+                                ? "text-red-600"
+                                : nivel === "medio"
+                                ? "text-yellow-600"
+                                : "text-green-600"
+                            }`}
+                          >
+                            {nivel === "alto"
+                              ? "!"
+                              : nivel === "medio"
+                              ? "⚠"
+                              : "✓"}
+                          </span>
+                        </div>
+                        <div>
+                          <h3
+                            className={`text-xl font-bold ${
+                              nivel === "alto"
+                                ? "text-red-600"
+                                : nivel === "medio"
+                                ? "text-yellow-600"
+                                : "text-green-600"
+                            }`}
+                          >
+                            {nivel === "alto"
+                              ? "Riesgo Alto de Diabetes"
+                              : nivel === "medio"
+                              ? "Riesgo Intermedio"
+                              : "Sin Riesgo"}
+                          </h3>
+                          <p className="text-gray-600">
+                            Probabilidad:{" "}
+                            <span className="font-bold">
+                              {(resultado.probabilidad * 100).toFixed(2)}%
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
               {/* 🔎 Factores que influyen (reglas basadas en SHAP global) */}
               {factores.length > 0 && (

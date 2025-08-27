@@ -12,6 +12,12 @@ export default function Historial() {
 
   const navigate = useNavigate();
 
+  const getRiskLevel = (prob) => {
+    if (prob >= 0.66) return "Riesgo de diabetes";
+    if (prob >= 0.33) return "Riesgo moderado";
+    return "Bajo riesgo";
+  };
+
   const handleRepeat = (registro) => {
     // Guardamos los valores en localStorage
     localStorage.setItem("formData", JSON.stringify(registro));
@@ -112,22 +118,32 @@ export default function Historial() {
             {registros.map((reg, index) => (
               <div
                 key={index}
-                className={`rounded-xl shadow-md p-6 ${
-                  reg.prediccion === 1
-                    ? "bg-red-50 border-l-4 border-red-500"
-                    : "bg-green-50 border-l-4 border-green-500"
-                }`}
+                className={(() => {
+                  const nivel = getRiskLevel(reg.probabilidad);
+                  return `rounded-xl shadow-md p-6 ${
+                    nivel === "Riesgo de diabetes"
+                      ? "bg-red-50 border-l-4 border-red-500"
+                      : nivel === "Riesgo moderado"
+                      ? "bg-yellow-50 border-l-4 border-yellow-500"
+                      : "bg-green-50 border-l-4 border-green-500"
+                  }`;
+                })()}
               >
                 <div className="flex justify-between items-center">
                   <div>
                     <h3
-                      className={`text-lg font-bold ${
-                        reg.prediccion === 1 ? "text-red-700" : "text-green-700"
-                      }`}
+                      className={(() => {
+                        const nivel = getRiskLevel(reg.probabilidad);
+                        return `text-lg font-bold ${
+                          nivel === "Riesgo de diabetes"
+                            ? "text-red-700"
+                            : nivel === "Riesgo moderado"
+                            ? "text-yellow-700"
+                            : "text-green-700"
+                        }`;
+                      })()}
                     >
-                      {reg.prediccion === 1
-                        ? "Riesgo de Diabetes"
-                        : "Sin Riesgo"}
+                      {getRiskLevel(reg.probabilidad)}
                     </h3>
                     <p className="text-gray-600">
                       Probabilidad:{" "}
