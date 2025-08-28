@@ -8,11 +8,13 @@ import API_URL from "../config";
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false); // 👈 estado de carga
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // 👈 empieza la carga
 
     try {
       const response = await fetch(`${API_URL}/users/login`, {
@@ -40,6 +42,8 @@ const Login = () => {
     } catch (error) {
       console.error("Error:", error);
       alert("⚠️ Error al conectar con el servidor");
+    } finally {
+      setLoading(false); // 👈 termina la carga siempre
     }
   };
 
@@ -78,9 +82,15 @@ const Login = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300"
+            disabled={loading} // Deshabilita mientras carga
+            className={`w-full py-3 rounded-lg font-semibold transition duration-300 
+    ${
+      loading
+        ? "bg-blue-400 text-white cursor-not-allowed"
+        : "bg-blue-600 text-white hover:bg-blue-700"
+    }`}
           >
-            Entrar
+            {loading ? "Cargando..." : "Entrar"}
           </button>
         </form>
         <p className="mt-6 text-center text-gray-600">

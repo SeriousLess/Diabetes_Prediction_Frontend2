@@ -6,11 +6,13 @@ import API_URL from "../config";
 const Register = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
       const response = await fetch(`${API_URL}/users/signup`, {
@@ -33,6 +35,8 @@ const Register = () => {
     } catch (error) {
       console.error("Error:", error);
       alert("⚠️ Error al conectar con el servidor");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -84,9 +88,14 @@ const Register = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300"
+            disabled={loading}
+            className={`w-full py-3 rounded-lg font-semibold transition duration-300 ${
+              loading
+                ? "bg-green-400 text-white cursor-not-allowed"
+                : "bg-green-600 text-white hover:bg-green-700"
+            }`}
           >
-            Registrarse
+            {loading ? "Cargando..." : "Registrarse"}
           </button>
         </form>
         <p className="mt-6 text-center text-gray-600">

@@ -182,9 +182,6 @@ export default function Historial() {
                     {reg.RIAGENDR === 1 ? "Hombre" : "Mujer"}
                   </p>
                   <p>
-                    <span className="font-semibold">Etnia:</span> {reg.RIDRETH1}
-                  </p>
-                  <p>
                     <span className="font-semibold">IMC:</span> {reg.BMXBMI}
                   </p>
                   <p>

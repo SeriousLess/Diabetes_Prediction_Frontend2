@@ -1,7 +1,7 @@
 /**
  * Orden global de importancia (de tu salida SHAP)
  * MCQ300C > RIDAGEYR > HSD010 > BMXWAIST > INDHHIN2 > DMDEDUC2 > BMXBMI > SLD010H
- * > RIDRETH1 > RIAGENDR > PAQ605 > SMQ020
+ * > RIAGENDR > PAQ605 > SMQ020
  */
 export const FACTORES_ORDENADOS = [
   "MCQ300C",
@@ -12,7 +12,6 @@ export const FACTORES_ORDENADOS = [
   "DMDEDUC2",
   "BMXBMI",
   "SLD010H",
-  "RIDRETH1",
   "RIAGENDR",
   "PAQ605",
   "SMQ020",

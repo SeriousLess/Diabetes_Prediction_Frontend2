@@ -8,7 +8,6 @@ import API_URL from "../config";
 const campos = {
   RIDAGEYR: "Edad (años)",
   RIAGENDR: "Sexo (1 = Hombre, 2 = Mujer)",
-  RIDRETH1: "Etnia (1-5)",
   BMXBMI: "Índice de Masa Corporal",
   BMXWAIST: "Circunferencia de cintura (cm)",
   MCQ300C: "Historia familiar de diabetes (1 = Sí, 2 = No)",
