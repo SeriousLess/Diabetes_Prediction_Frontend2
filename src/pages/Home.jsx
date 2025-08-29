@@ -12,7 +12,7 @@ const Home = () => {
       <nav className="bg-white shadow-md py-4 px-6">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-blue-800">
-            Plataforma de predicción diabetes tipo 2
+            Plataforma de prevención de diabetes tipo 2
           </h1>
           <div className="hidden md:flex space-x-6">
             <button
@@ -360,8 +360,8 @@ const Home = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4">Contacto</h4>
             <ul className="space-y-2 text-gray-400">
-              <li>contacto@diabetesprediction.com</li>
-              <li>+51 999 999 999</li>
+              <li>diegomoscoso2019@gmail.com</li>
+              {/*<li>+51 999 999 999</li>*/}
               <li>Lima, Perú</li>
             </ul>
           </div>

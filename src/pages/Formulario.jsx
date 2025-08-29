@@ -58,9 +58,6 @@ export default function Formulario() {
     setResultado(null);
 
     try {
-      console.log("Usuario actual:", user);
-      console.log("Token actual:", token);
-
       // Asegurar que token no es undefined
       //const response = await fetch("http://127.0.0.1:8000/prediccion/", {
       const response = await fetch(`${API_URL}/prediccion/`, {
