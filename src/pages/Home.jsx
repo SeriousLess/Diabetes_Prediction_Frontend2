@@ -12,7 +12,7 @@ const Home = () => {
       <nav className="bg-white shadow-md py-4 px-6">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-blue-800">
-            Plataforma de prevención de diabetes tipo 2
+            Plataforma de predicción de diabetes tipo 2
           </h1>
           <div className="hidden md:flex space-x-6">
             <button
