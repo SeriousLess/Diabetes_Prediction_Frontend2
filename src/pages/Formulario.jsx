@@ -22,16 +22,15 @@ const campos = {
 };
 
 export default function Formulario() {
-  const { user, token } = useContext(AuthContext); // 👈 ahora tenemos el usuario logeado
+  const { user, token } = useContext(AuthContext);
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem("formData");
     if (saved) {
       const parsed = JSON.parse(saved);
-      // eliminamos campos que no son del formulario (id, fecha, probabilidad, etc.)
       const clean = Object.fromEntries(
         Object.keys(campos).map((k) => [k, parsed[k] ?? ""])
       );
-      localStorage.removeItem("formData"); // limpiar después de usar
+      localStorage.removeItem("formData");
       return clean;
     }
     return Object.fromEntries(Object.keys(campos).map((k) => [k, ""]));
@@ -40,11 +39,8 @@ export default function Formulario() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [factores, setFactores] = useState([]);
-
-  // Estado para guardar los datos
   const [scatterData, setScatterData] = useState([]);
 
-  // Fetch desde public/pca_coords.json
   useEffect(() => {
     fetch("/pca_coords.json")
       .then((res) => res.json())
@@ -52,17 +48,46 @@ export default function Formulario() {
       .catch((err) => console.error("Error cargando JSON:", err));
   }, []);
 
-  // Colores para clusters
   const clusterColors = {
-    0: "red", // peor salud
-    1: "green", // mejor salud
+    0: "red",
+    1: "green",
   };
 
-  const width = 700; // 👈 más ancho
-  const height = 400;
   const margin = 50;
 
-  // valores de scatter + el punto del usuario si existe
+  const [chartSize, setChartSize] = useState({
+    width: 700,
+    height: 400,
+    legendWidth: 500,
+    legendX: 40,
+    legendTextWidth: 420,
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth < 600) {
+        setChartSize({
+          width: 320,
+          height: 220,
+          legendWidth: 220,
+          legendX: 10,
+          legendTextWidth: 120,
+        });
+      } else {
+        setChartSize({
+          width: 700,
+          height: 400,
+          legendWidth: 500,
+          legendX: 40,
+          legendTextWidth: 420,
+        });
+      }
+    }
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const allX = [
     ...scatterData.map((d) => d.x),
     ...(resultado?.no_supervisado?.pca_coords
@@ -81,7 +106,6 @@ export default function Formulario() {
   const rawYMin = Math.min(...allY);
   const rawYMax = Math.max(...allY);
 
-  // añadimos 10% de aire
   const xRange = rawXMax - rawXMin;
   const yRange = rawYMax - rawYMin;
 
@@ -91,9 +115,11 @@ export default function Formulario() {
   const yMax = rawYMax + yRange * 0.05;
 
   const scaleX = (x) =>
-    margin + ((x - xMin) / (xMax - xMin)) * (width - 2 * margin);
+    margin + ((x - xMin) / (xMax - xMin)) * (chartSize.width - 2 * margin);
   const scaleY = (y) =>
-    height - margin - ((y - yMin) / (yMax - yMin)) * (height - 2 * margin);
+    chartSize.height -
+    margin -
+    ((y - yMin) / (yMax - yMin)) * (chartSize.height - 2 * margin);
 
   const getRiskLevel = (prob) => {
     if (prob >= 0.66) return "alto";
@@ -114,13 +140,11 @@ export default function Formulario() {
     setResultado(null);
 
     try {
-      // Asegurar que token no es undefined
-      //const response = await fetch("http://127.0.0.1:8000/prediccion/", {
       const response = await fetch(`${API_URL}/prediccion/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "", // 👈 fuerza header vacío si no hay token
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify(
           Object.fromEntries(
@@ -133,7 +157,6 @@ export default function Formulario() {
       const data = await response.json();
       setResultado(data);
 
-      // Generar explicaciones SOLO en frontend (reglas)
       const mensajes = getFactorMessages(
         Object.fromEntries(
           Object.entries(formData).map(([k, v]) => [k, Number(v)])
@@ -176,7 +199,7 @@ export default function Formulario() {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
-        {/* Form Section - Más compacto */}
+        {/* Form Section */}
         <div className="w-full lg:w-1/2">
           <div className="bg-white rounded-xl shadow-md p-6 sticky top-4">
             {user && (
@@ -233,7 +256,7 @@ export default function Formulario() {
           </div>
         </div>
 
-        {/* Result Section - Al lado derecho en desktop, debajo en móvil */}
+        {/* Result Section */}
         <div className="w-full lg:w-1/2">
           {resultado ? (
             <div className="bg-white rounded-xl shadow-md p-6 sticky top-4">
@@ -241,7 +264,6 @@ export default function Formulario() {
                 Resultado
               </h2>
 
-              {/* 👇 en lugar del bloque anterior */}
               {resultado &&
                 (() => {
                   const nivel = getRiskLevel(
@@ -314,7 +336,6 @@ export default function Formulario() {
                   );
                 })()}
 
-              {/* 🔎 Factores que influyen (reglas basadas en SHAP global) */}
               {factores.length > 0 && (
                 <div className="mt-4 p-5 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <h3 className="text-lg font-semibold text-yellow-800 mb-2">
@@ -373,198 +394,269 @@ export default function Formulario() {
         </div>
       </div>
 
-      {/* 👇 Aquí agregamos el gráfico */}
+      {/* Gráfico y leyenda */}
       {resultado ? (
         <div className="bg-white p-6 rounded-xl shadow-md">
           <h3 className="text-lg font-bold text-center mb-4">
             Resultados del Análisis de Grupos
           </h3>
-          <div className="flex flex-col md:flex-row items-center md:items-start justify-center gap-6">
-            <Stage width={width} height={height + 30}>
-              <Layer>
-                {/* Ejes X e Y */}
-                <Line
-                  points={[
-                    margin,
-                    height - margin,
-                    width - margin,
-                    height - margin,
-                  ]}
-                  stroke="black"
-                  strokeWidth={2}
-                />
-                <Line
-                  points={[margin, margin, margin, height - margin]}
-                  stroke="black"
-                  strokeWidth={2}
-                />
-
-                {/* Ticks y labels X personalizados */}
-                {[
-                  { value: xMin, label: "Bajo riesgo" },
-                  { value: xMax, label: "Alto riesgo" },
-                ].map((tick, i) => {
-                  const x = scaleX(tick.value);
-                  return [
+          <div className="flex flex-col md:flex-row justify-center items-start gap-8 md:gap-12">
+            <div className="w-full md:w-auto flex-shrink-0 flex-grow-0">
+              <div className="w-full overflow-x-auto">
+                <Stage
+                  width={chartSize.width}
+                  height={
+                    chartSize.width < 400
+                      ? chartSize.height + 80 // más espacio para la leyenda vertical
+                      : chartSize.height + 60 // un poco más en desktop para margen
+                  }
+                >
+                  <Layer>
+                    {/* Ejes X e Y */}
                     <Line
-                      key={`x-tick-${i}`}
-                      points={[x, height - margin, x, height - margin + 5]}
+                      points={[
+                        margin,
+                        chartSize.height - margin,
+                        chartSize.width - margin,
+                        chartSize.height - margin,
+                      ]}
                       stroke="black"
-                    />,
-                    <Text
-                      key={`x-label-${i}`}
-                      x={i === 0 ? x - 30 : x - 30} // ajuste distinto para Bajo y Alto
-                      y={height - margin + 15}
-                      text={tick.label}
-                      fontSize={12}
-                    />,
-                  ];
-                })}
-
-                {/* Ticks Y sin labels */}
-                {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
-                  const y = scaleY(yMin + v * (yMax - yMin));
-                  return (
+                      strokeWidth={2}
+                    />
                     <Line
-                      key={`y-tick-${i}`}
-                      points={[margin - 5, y, margin, y]}
+                      points={[
+                        margin,
+                        margin,
+                        margin,
+                        chartSize.height - margin,
+                      ]}
                       stroke="black"
+                      strokeWidth={2}
                     />
-                  );
-                })}
 
-                {/* Grid vertical */}
-                {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
-                  const x = scaleX(xMin + v * (xMax - xMin));
-                  return (
-                    <Line
-                      key={`grid-x-${i}`}
-                      points={[x, margin, x, height - margin]}
-                      stroke="lightgray"
-                      strokeWidth={1}
-                    />
-                  );
-                })}
+                    {/* Ticks y labels X personalizados */}
+                    {[
+                      { value: xMin, label: "Bajo riesgo" },
+                      { value: xMax, label: "Alto riesgo" },
+                    ].map((tick, i) => {
+                      const x = scaleX(tick.value);
+                      return [
+                        <Line
+                          key={`x-tick-${i}`}
+                          points={[
+                            x,
+                            chartSize.height - margin,
+                            x,
+                            chartSize.height - margin + 5,
+                          ]}
+                          stroke="black"
+                        />,
+                        <Text
+                          key={`x-label-${i}`}
+                          x={i === 0 ? x - 30 : x - 30}
+                          y={chartSize.height - margin + 15}
+                          text={tick.label}
+                          fontSize={12}
+                        />,
+                      ];
+                    })}
 
-                {/* Grid horizontal */}
-                {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
-                  const y = scaleY(yMin + v * (yMax - yMin));
-                  return (
-                    <Line
-                      key={`grid-y-${i}`}
-                      points={[margin, y, width - margin, y]}
-                      stroke="lightgray"
-                      strokeWidth={1}
-                    />
-                  );
-                })}
+                    {/* Ticks Y sin labels */}
+                    {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
+                      const y = scaleY(yMin + v * (yMax - yMin));
+                      return (
+                        <Line
+                          key={`y-tick-${i}`}
+                          points={[margin - 5, y, margin, y]}
+                          stroke="black"
+                        />
+                      );
+                    })}
 
-                {/* Puntos */}
-                {scatterData.map((point, i) => (
-                  <Circle
-                    key={i}
-                    x={scaleX(point.x)}
-                    y={scaleY(point.y)}
-                    radius={4}
-                    fill={clusterColors[point.cluster] || "gray"}
-                    opacity={0.7}
-                  />
-                ))}
-                {/* 🔴 Punto del usuario (modelo NS) */}
-                {resultado?.no_supervisado?.pca_coords && (
-                  <Circle
-                    x={scaleX(resultado.no_supervisado.pca_coords.x)}
-                    y={scaleY(resultado.no_supervisado.pca_coords.y)}
-                    radius={8} // más grande
-                    fill="blue" // azul para diferenciar
-                    stroke="black" // borde negro
-                    strokeWidth={2}
-                  />
-                )}
-              </Layer>
+                    {/* Grid vertical */}
+                    {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
+                      const x = scaleX(xMin + v * (xMax - xMin));
+                      return (
+                        <Line
+                          key={`grid-x-${i}`}
+                          points={[x, margin, x, chartSize.height - margin]}
+                          stroke="lightgray"
+                          strokeWidth={1}
+                        />
+                      );
+                    })}
 
-              {/* 🔹 Leyenda movida abajo del eje X */}
-              <Layer>
-                {/* Fondo de la leyenda */}
-                <Rect
-                  x={margin + 40}
-                  y={height - margin + 35} // debajo del eje X
-                  width={500}
-                  height={40}
-                  fill="white"
-                  stroke="black"
-                  cornerRadius={10}
-                  shadowBlur={5}
-                />
+                    {/* Grid horizontal */}
+                    {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
+                      const y = scaleY(yMin + v * (yMax - yMin));
+                      return (
+                        <Line
+                          key={`grid-y-${i}`}
+                          points={[margin, y, chartSize.width - margin, y]}
+                          stroke="lightgray"
+                          strokeWidth={1}
+                        />
+                      );
+                    })}
 
-                {/* Grupo de menor riesgo */}
-                <Circle
-                  x={margin + 60}
-                  y={height - margin + 55}
-                  radius={6}
-                  fill="green"
-                />
-                <Text
-                  x={margin + 70}
-                  y={height - margin + 50}
-                  text="Grupo de menor riesgo"
-                  fontSize={14}
-                  fill="black"
-                />
+                    {/* Puntos */}
+                    {scatterData.map((point, i) => (
+                      <Circle
+                        key={i}
+                        x={scaleX(point.x)}
+                        y={scaleY(point.y)}
+                        radius={4}
+                        fill={clusterColors[point.cluster] || "gray"}
+                        opacity={0.7}
+                      />
+                    ))}
+                    {/* 🔴 Punto del usuario (modelo NS) */}
+                    {resultado?.no_supervisado?.pca_coords && (
+                      <Circle
+                        x={scaleX(resultado.no_supervisado.pca_coords.x)}
+                        y={scaleY(resultado.no_supervisado.pca_coords.y)}
+                        radius={8}
+                        fill="blue"
+                        stroke="black"
+                        strokeWidth={2}
+                      />
+                    )}
+                  </Layer>
 
-                {/* Grupo de mayor riesgo */}
-                <Circle
-                  x={margin + 235}
-                  y={height - margin + 55}
-                  radius={6}
-                  fill="red"
-                />
-                <Text
-                  x={margin + 245}
-                  y={height - margin + 50}
-                  text="Grupo de mayor riesgo"
-                  fontSize={14}
-                  fill="black"
-                />
-
-                {/* Tu evaluación */}
-                <Circle
-                  x={margin + 410}
-                  y={height - margin + 55}
-                  radius={6}
-                  fill="blue"
-                  stroke="black"
-                />
-                <Text
-                  x={margin + 420}
-                  y={height - margin + 50}
-                  text="Tu evaluación"
-                  fontSize={14}
-                  fill="black"
-                />
-              </Layer>
-            </Stage>
-
-            {/* 📖 Descripción */}
-            <div className="w-64 p-5 bg-gray-50 border rounded-xl shadow-md text-sm">
-              <h2 className="text-lg font-semibold mb-2">Interpretación</h2>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Cada punto representa un grupo de personas similares.</li>
-                <li>🔴 = Mayor riesgo de diabetes.</li>
-                <li>🟢 = Menor riesgo de diabetes.</li>
-                <li>🔵 = Tu resultado.</li>
-              </ul>
-              <p className="mt-3 text-gray-700">
-                Si tu punto azul se acerca a los rojos → tu perfil se parece al
-                de quienes tienen mayor riesgo. Si está cerca de los verdes → tu
-                perfil es más parecido al de menor riesgo.
-              </p>
+                  {/* Leyenda: vertical en móvil, horizontal en desktop */}
+                  {chartSize.width < 400 ? (
+                    <Layer>
+                      <Rect
+                        x={margin}
+                        y={chartSize.height - margin + 35}
+                        width={chartSize.width - 2 * margin}
+                        height={90}
+                        fill="white"
+                        stroke="black"
+                        cornerRadius={10}
+                        shadowBlur={5}
+                      />
+                      {/* Menor riesgo */}
+                      <Circle
+                        x={margin + 20}
+                        y={chartSize.height - margin + 55}
+                        radius={6}
+                        fill="green"
+                      />
+                      <Text
+                        x={margin + 40}
+                        y={chartSize.height - margin + 48}
+                        text="Menor riesgo"
+                        fontSize={14}
+                        fill="black"
+                      />
+                      {/* Mayor riesgo */}
+                      <Circle
+                        x={margin + 20}
+                        y={chartSize.height - margin + 80}
+                        radius={6}
+                        fill="red"
+                      />
+                      <Text
+                        x={margin + 40}
+                        y={chartSize.height - margin + 73}
+                        text="Mayor riesgo"
+                        fontSize={14}
+                        fill="black"
+                      />
+                      {/* Tú */}
+                      <Circle
+                        x={margin + 20}
+                        y={chartSize.height - margin + 105}
+                        radius={6}
+                        fill="blue"
+                        stroke="black"
+                      />
+                      <Text
+                        x={margin + 40}
+                        y={chartSize.height - margin + 98}
+                        text="Tú"
+                        fontSize={14}
+                        fill="black"
+                      />
+                    </Layer>
+                  ) : (
+                    <Layer>
+                      <Rect
+                        x={margin + chartSize.legendX}
+                        y={chartSize.height - margin + 35}
+                        width={chartSize.legendWidth}
+                        height={40}
+                        fill="white"
+                        stroke="black"
+                        cornerRadius={10}
+                        shadowBlur={5}
+                      />
+                      <Circle
+                        x={margin + 60}
+                        y={chartSize.height - margin + 55}
+                        radius={6}
+                        fill="green"
+                      />
+                      <Text
+                        x={margin + 70}
+                        y={chartSize.height - margin + 50}
+                        text="Grupo de menor riesgo"
+                        fontSize={14}
+                        fill="black"
+                      />
+                      <Circle
+                        x={margin + 235}
+                        y={chartSize.height - margin + 55}
+                        radius={6}
+                        fill="red"
+                      />
+                      <Text
+                        x={margin + 245}
+                        y={chartSize.height - margin + 50}
+                        text="Grupo de mayor riesgo"
+                        fontSize={14}
+                        fill="black"
+                      />
+                      <Circle
+                        x={margin + 410}
+                        y={chartSize.height - margin + 55}
+                        radius={6}
+                        fill="blue"
+                        stroke="black"
+                      />
+                      <Text
+                        x={margin + 420}
+                        y={chartSize.height - margin + 50}
+                        text="Tu evaluación"
+                        fontSize={14}
+                        fill="black"
+                      />
+                    </Layer>
+                  )}
+                </Stage>
+              </div>
+            </div>
+            <div className="w-full max-w-xs md:max-w-sm lg:max-w-md">
+              <div className="p-5 bg-gray-50 border rounded-xl shadow-md text-sm">
+                <h2 className="text-lg font-semibold mb-2">Interpretación</h2>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Cada punto representa un grupo de personas similares.</li>
+                  <li>🟢 = Menor riesgo de diabetes.</li>
+                  <li>🔴 = Mayor riesgo de diabetes.</li>
+                  <li>🔵 = Tu resultado.</li>
+                </ul>
+                <p className="mt-3 text-gray-700">
+                  Si tu punto azul se acerca a los rojos → tu perfil se parece
+                  al de quienes tienen mayor riesgo. Si está cerca de los verdes
+                  → tu perfil es más parecido al de menor riesgo.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       ) : null}
 
-      {/* Footer simplificado */}
       <footer className="bg-gray-800 text-white py-8 px-6 mt-8">
         <div className="max-w-6xl mx-auto text-center">
           <p className="text-sm text-gray-400">
