@@ -16,7 +16,7 @@ const campos = {
   PAQ605: "Actividad física (1 = Regular, 2 = Ocasional)",
   SMQ020: "Fumador (1 = Sí, 2 = No)",
   DMDEDUC2: "Nivel educativo (1-5)",
-  INDHHIN2: "Ingreso familiar (1-5)",
+  INDHHIN2: "Ingreso familiar anual (1-12)",
   SLD010H: "Horas de sueño",
   HSD010: "Salud general (1 = Excelente, 5 = Mala)",
 };
@@ -47,11 +47,18 @@ const opcionesCampos = {
     { label: "Universitario completo o más", value: 5 },
   ],
   INDHHIN2: [
-    { label: "Muy bajo (≤ S/1,000)", value: 1 },
-    { label: "Bajo (S/1,001 – S/2,000)", value: 2 },
-    { label: "Medio (S/2,001 – S/4,000)", value: 3 },
-    { label: "Alto (S/4,001 – S/8,000)", value: 4 },
-    { label: "Muy alto (≥ S/8,001)", value: 5 },
+    { label: "Menos de S/ 25,000 al año", value: 1 },
+    { label: "S/ 25,000 - 35,000 al año", value: 2 },
+    { label: "S/ 35,000 - 45,000 al año", value: 3 },
+    { label: "S/ 45,000 - 55,000 al año", value: 4 },
+    { label: "S/ 55,000 - 65,000 al año", value: 5 },
+    { label: "S/ 65,000 - 75,000 al año", value: 6 },
+    { label: "S/ 75,000 - 85,000 al año", value: 7 },
+    { label: "S/ 85,000 - 100,000 al año", value: 8 },
+    { label: "S/ 100,000 - 120,000 al año", value: 9 },
+    { label: "S/ 120,000 - 140,000 al año", value: 10 },
+    { label: "S/ 140,000 - 160,000 al año", value: 11 },
+    { label: "Más de S/ 160,000 al año", value: 12 },
   ],
   HSD010: [
     { label: "Excelente", value: 1 },
@@ -459,7 +466,7 @@ export default function Formulario() {
       {resultado ? (
         <div className="bg-white p-6 rounded-xl shadow-md">
           <h3 className="text-lg font-bold text-center mb-4">
-            Resultados del Análisis de Grupos
+            Resultados del Análisis con Personas Similares
           </h3>
           <div className="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-12">
             <div className="w-full md:w-auto flex-shrink-0 flex-grow-0">
@@ -701,8 +708,18 @@ export default function Formulario() {
             <div className="w-full max-w-xs md:max-w-sm lg:max-w-md">
               <div className="p-5 bg-gray-50 border rounded-xl shadow-md text-sm">
                 <h2 className="text-lg font-semibold mb-2">Interpretación</h2>
+                <p className="text-gray-700">
+                  Este gráfico compara tu perfil con el de otras personas según
+                  su riesgo de diabetes tipo 2.
+                </p>
+                <div className="my-4" />{" "}
+                {/* Espacio extra entre la intro y la lista */}
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Cada punto representa un grupo de personas similares.</li>
+                  <li>
+                    <span className="font-semibold">
+                      Cada punto representa un grupo de personas similares.
+                    </span>
+                  </li>
                   <li>🟢 = Menor riesgo de diabetes.</li>
                   <li>🔴 = Mayor riesgo de diabetes.</li>
                   <li>🔵 = Tu resultado.</li>
@@ -711,6 +728,11 @@ export default function Formulario() {
                   Si tu punto azul se acerca a los rojos → tu perfil se parece
                   al de quienes tienen mayor riesgo. Si está cerca de los verdes
                   → tu perfil es más parecido al de menor riesgo.
+                </p>
+                <p className="mt-4 text-xs text-gray-500">
+                  <span className="font-semibold">Nota:</span> Este resultado es
+                  solo informativo. Consulta a un profesional de salud para una
+                  evaluación completa.
                 </p>
               </div>
             </div>
