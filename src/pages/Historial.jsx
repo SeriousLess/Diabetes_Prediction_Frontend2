@@ -5,6 +5,54 @@ import { useNavigate } from "react-router-dom";
 
 import API_URL from "../config";
 
+const opcionesCampos = {
+  RIAGENDR: [
+    { label: "Hombre", value: 1 },
+    { label: "Mujer", value: 2 },
+  ],
+  MCQ300C: [
+    { label: "Sí", value: 1 },
+    { label: "No", value: 2 },
+  ],
+  PAQ605: [
+    { label: "Regular", value: 1 },
+    { label: "Ocasional", value: 2 },
+  ],
+  SMQ020: [
+    { label: "Sí", value: 1 },
+    { label: "No", value: 2 },
+  ],
+  DMDEDUC2: [
+    { label: "Primaria incompleta", value: 1 },
+    { label: "Primaria completa / Secundaria incompleta", value: 2 },
+    { label: "Secundaria completa", value: 3 },
+    { label: "Superior técnico o universitario incompleto", value: 4 },
+    { label: "Universitario completo o más", value: 5 },
+  ],
+  INDHHIN2: [
+    { label: "Muy bajo (≤ S/1,000)", value: 1 },
+    { label: "Bajo (S/1,001 – S/2,000)", value: 2 },
+    { label: "Medio (S/2,001 – S/4,000)", value: 3 },
+    { label: "Alto (S/4,001 – S/8,000)", value: 4 },
+    { label: "Muy alto (≥ S/8,001)", value: 5 },
+  ],
+  HSD010: [
+    { label: "Excelente", value: 1 },
+    { label: "Muy buena", value: 2 },
+    { label: "Buena", value: 3 },
+    { label: "Regular", value: 4 },
+    { label: "Mala", value: 5 },
+  ],
+};
+
+// Función para obtener el label de un valor numérico
+function getLabel(campo, valor) {
+  const opciones = opcionesCampos[campo];
+  if (!opciones) return valor;
+  const op = opciones.find((o) => Number(o.value) === Number(valor));
+  return op ? op.label : valor;
+}
+
 export default function Historial() {
   const { user, token } = useContext(AuthContext);
   const [registros, setRegistros] = useState([]);
@@ -179,7 +227,7 @@ export default function Historial() {
                   </p>
                   <p>
                     <span className="font-semibold">Sexo:</span>{" "}
-                    {reg.RIAGENDR === 1 ? "Hombre" : "Mujer"}
+                    {getLabel("RIAGENDR", reg.RIAGENDR)}
                   </p>
                   <p>
                     <span className="font-semibold">IMC:</span> {reg.BMXBMI}
@@ -190,30 +238,31 @@ export default function Historial() {
                   </p>
                   <p>
                     <span className="font-semibold">Hist. Familiar:</span>{" "}
-                    {reg.MCQ300C === 1 ? "Sí" : "No"}
+                    {getLabel("MCQ300C", reg.MCQ300C)}
                   </p>
                   <p>
                     <span className="font-semibold">Actividad:</span>{" "}
-                    {reg.PAQ605}
+                    {getLabel("PAQ605", reg.PAQ605)}
                   </p>
                   <p>
                     <span className="font-semibold">Fumador:</span>{" "}
-                    {reg.SMQ020 === 1 ? "Sí" : "No"}
+                    {getLabel("SMQ020", reg.SMQ020)}
                   </p>
                   <p>
                     <span className="font-semibold">Educación:</span>{" "}
-                    {reg.DMDEDUC2}
+                    {getLabel("DMDEDUC2", reg.DMDEDUC2)}
                   </p>
                   <p>
                     <span className="font-semibold">Ingreso:</span>{" "}
-                    {reg.INDHHIN2}
+                    {getLabel("INDHHIN2", reg.INDHHIN2)}
                   </p>
                   <p>
                     <span className="font-semibold">Horas sueño:</span>{" "}
                     {reg.SLD010H}
                   </p>
                   <p>
-                    <span className="font-semibold">Salud:</span> {reg.HSD010}
+                    <span className="font-semibold">Salud:</span>{" "}
+                    {getLabel("HSD010", reg.HSD010)}
                   </p>
                 </div>
               </div>

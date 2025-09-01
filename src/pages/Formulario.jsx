@@ -21,6 +21,53 @@ const campos = {
   HSD010: "Salud general (1 = Excelente, 5 = Mala)",
 };
 
+// Opciones para los campos tipo combo box
+const opcionesCampos = {
+  RIAGENDR: [
+    { label: "Hombre", value: 1 },
+    { label: "Mujer", value: 2 },
+  ],
+  MCQ300C: [
+    { label: "Sí", value: 1 },
+    { label: "No", value: 2 },
+  ],
+  PAQ605: [
+    { label: "Regular", value: 1 },
+    { label: "Ocasional", value: 2 },
+  ],
+  SMQ020: [
+    { label: "Sí", value: 1 },
+    { label: "No", value: 2 },
+  ],
+  DMDEDUC2: [
+    { label: "Primaria incompleta", value: 1 },
+    { label: "Primaria completa / Secundaria incompleta", value: 2 },
+    { label: "Secundaria completa", value: 3 },
+    { label: "Superior técnico o universitario incompleto", value: 4 },
+    { label: "Universitario completo o más", value: 5 },
+  ],
+  INDHHIN2: [
+    { label: "Muy bajo (≤ S/1,000)", value: 1 },
+    { label: "Bajo (S/1,001 – S/2,000)", value: 2 },
+    { label: "Medio (S/2,001 – S/4,000)", value: 3 },
+    { label: "Alto (S/4,001 – S/8,000)", value: 4 },
+    { label: "Muy alto (≥ S/8,001)", value: 5 },
+  ],
+  HSD010: [
+    { label: "Excelente", value: 1 },
+    { label: "Muy buena", value: 2 },
+    { label: "Buena", value: 3 },
+    { label: "Regular", value: 4 },
+    { label: "Mala", value: 5 },
+  ],
+};
+
+const getRiskLevel = (prob) => {
+  if (prob >= 0.66) return "alto";
+  if (prob >= 0.33) return "medio";
+  return "bajo";
+};
+
 export default function Formulario() {
   const { user, token } = useContext(AuthContext);
   const [formData, setFormData] = useState(() => {
@@ -121,12 +168,6 @@ export default function Formulario() {
     margin -
     ((y - yMin) / (yMax - yMin)) * (chartSize.height - 2 * margin);
 
-  const getRiskLevel = (prob) => {
-    if (prob >= 0.66) return "alto";
-    if (prob >= 0.33) return "medio";
-    return "bajo";
-  };
-
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -226,15 +267,35 @@ export default function Formulario() {
                         </span>
                       )}
                     </label>
-                    <input
-                      type="number"
-                      name={key}
-                      value={formData[key]}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                      min="0"
-                    />
+                    {opcionesCampos[key] ? (
+                      <select
+                        name={key}
+                        value={formData[key]}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Selecciona una opción</option>
+                        {opcionesCampos[key].map((op) => (
+                          <option key={op.value} value={op.value}>
+                            {op.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="number"
+                        name={key}
+                        value={formData[key]}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        min="0"
+                        step={
+                          key === "BMXBMI" || key === "BMXWAIST" ? "any" : "1"
+                        }
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -400,7 +461,7 @@ export default function Formulario() {
           <h3 className="text-lg font-bold text-center mb-4">
             Resultados del Análisis de Grupos
           </h3>
-          <div className="flex flex-col md:flex-row justify-center items-start gap-8 md:gap-12">
+          <div className="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-12">
             <div className="w-full md:w-auto flex-shrink-0 flex-grow-0">
               <div className="w-full overflow-x-auto">
                 <Stage
