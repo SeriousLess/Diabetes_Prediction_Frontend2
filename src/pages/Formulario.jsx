@@ -11,7 +11,7 @@ const campos = {
   BMXBMI: "Índice de Masa Corporal",
   BMXWAIST: "Circunferencia de cintura (cm)",
   MCQ300C: "Historia familiar de diabetes (1 = Sí, 2 = No)",
-  PAQ605: "Actividad física (1 = Regular, 2 = Ocasional)",
+  PAQ605: "Actividad física (1 = Varias veces por semana, 2 = Solo a veces)",
   SMQ020: "Fumador (1 = Sí, 2 = No)",
   DMDEDUC2: "Nivel educativo (1-5)",
   INDHHIN2: "Ingreso familiar anual (1-12)",
@@ -22,7 +22,7 @@ const campos = {
 const recomendacionesPorVariable = {
   BMXBMI: (valor) =>
     valor >= 25
-      ? "Tu IMC está por encima del rango saludable. Mantener un peso adecuado mediante una alimentación balanceada y actividad física regular puede reducir significativamente el riesgo de diabetes tipo 2. Consulta con un nutricionista para un plan personalizado."
+      ? "Tu IMC está por encima del rango saludable (≥25). Mantener un peso adecuado mediante una alimentación balanceada y actividad física regular puede reducir significativamente el riesgo de diabetes tipo 2. Consulta con un nutricionista para un plan personalizado."
       : "Tu IMC está en el rango saludable. Continúa con tus buenos hábitos para mantener tu peso ideal.",
   BMXWAIST: (valor, form) => {
     const sexo = Number(form?.RIAGENDR);
@@ -40,7 +40,7 @@ const recomendacionesPorVariable = {
       : "No tienes antecedentes familiares de diabetes, lo cual disminuye tu riesgo. Aun así, mantén hábitos saludables.",
   PAQ605: (valor) =>
     valor === 2
-      ? "La actividad física regular ayuda a controlar el peso y la glucosa en sangre. Intenta realizar al menos 150 minutos de ejercicio moderado a la semana, como caminar, nadar o andar en bicicleta."
+      ? "La actividad física varias veces a la semana ayuda a controlar el peso y la glucosa en sangre. Intenta realizar al menos 150 minutos de ejercicio moderado a la semana, como caminar, nadar o andar en bicicleta."
       : "Tu nivel de actividad física es adecuado. Sigue así para mantener tu salud.",
   SMQ020: (valor) =>
     valor === 1
@@ -68,8 +68,8 @@ const opcionesCampos = {
     { label: "No", value: 2 },
   ],
   PAQ605: [
-    { label: "Regular", value: 1 },
-    { label: "Ocasional", value: 2 },
+    { label: "Varias veces por semana", value: 1 },
+    { label: "Solo a veces", value: 2 },
   ],
   SMQ020: [
     { label: "Sí", value: 1 },

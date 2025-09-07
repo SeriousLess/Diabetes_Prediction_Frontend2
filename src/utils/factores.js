@@ -91,10 +91,10 @@ const reglas = {
     return null;
   },
 
-  // Actividad física (1 = Regular, 2 = Ocasional)
+  // Actividad física (1 = Varias veces por semana, 2 = Solo aveces)
   PAQ605: (v) => {
-    if (v === 2) return "Actividad física ocasional: aumentar la regularidad puede reducir tu riesgo.";
-    if (v === 1) return "Actividad física regular: excelente, factor protector. ¡Sigue así!";
+    if (v === 2) return "Actividad física solo aveces: aumentar la regularidad puede reducir tu riesgo.";
+    if (v === 1) return "Actividad física varias veces por semana: excelente, factor protector. ¡Sigue así!";
     return null;
   },
 
