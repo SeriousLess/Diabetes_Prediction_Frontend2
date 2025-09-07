@@ -2,9 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { getFactorMessages } from "../utils/factores";
-
 import { Stage, Layer, Circle, Line, Text, Rect } from "react-konva";
-
 import API_URL from "../config";
 
 const campos = {
@@ -21,7 +19,45 @@ const campos = {
   HSD010: "Salud general (1 = Excelente, 5 = Mala)",
 };
 
-// Opciones para los campos tipo combo box
+const recomendacionesPorVariable = {
+  BMXBMI: (valor) =>
+    valor >= 25
+      ? "Tu IMC está por encima del rango saludable. Mantener un peso adecuado mediante una alimentación balanceada y actividad física regular puede reducir significativamente el riesgo de diabetes tipo 2. Consulta con un nutricionista para un plan personalizado."
+      : "Tu IMC está en el rango saludable. Continúa con tus buenos hábitos para mantener tu peso ideal.",
+  BMXWAIST: (valor, form) => {
+    const sexo = Number(form?.RIAGENDR);
+    if (sexo === 1 && valor > 94)
+      return "Una circunferencia de cintura elevada en hombres (>94 cm) se asocia con mayor riesgo de diabetes y enfermedades cardiovasculares. Intenta reducirla con ejercicio aeróbico y una dieta baja en azúcares y grasas saturadas.";
+    if (sexo === 2 && valor > 80)
+      return "Una circunferencia de cintura elevada en mujeres (>80 cm) se asocia con mayor riesgo de diabetes y enfermedades cardiovasculares. Intenta reducirla con ejercicio aeróbico y una dieta baja en azúcares y grasas saturadas.";
+    if (!sexo && valor >= 90)
+      return "Una circunferencia de cintura elevada se asocia con mayor riesgo de diabetes y enfermedades cardiovasculares. Intenta reducirla con ejercicio aeróbico y una dieta baja en azúcares y grasas saturadas.";
+    return "Tu circunferencia de cintura es adecuada. Mantén hábitos saludables para conservar este resultado.";
+  },
+  MCQ300C: (valor) =>
+    valor === 1
+      ? "Tener antecedentes familiares de diabetes aumenta tu riesgo. Realiza chequeos médicos periódicos y mantén estilos de vida saludables para detectar y prevenir a tiempo."
+      : "No tienes antecedentes familiares de diabetes, lo cual disminuye tu riesgo. Aun así, mantén hábitos saludables.",
+  PAQ605: (valor) =>
+    valor === 2
+      ? "La actividad física regular ayuda a controlar el peso y la glucosa en sangre. Intenta realizar al menos 150 minutos de ejercicio moderado a la semana, como caminar, nadar o andar en bicicleta."
+      : "Tu nivel de actividad física es adecuado. Sigue así para mantener tu salud.",
+  SMQ020: (valor) =>
+    valor === 1
+      ? "Fumar incrementa el riesgo de diabetes y otras enfermedades graves. Considera buscar apoyo profesional para dejar de fumar y mejorar tu salud general."
+      : "No fumas, lo cual es excelente para tu salud. Mantén este buen hábito.",
+  SLD010H: (valor) =>
+    valor < 7
+      ? "Dormir menos de 7 horas por noche puede afectar el metabolismo y aumentar el riesgo de diabetes. Intenta mejorar tu higiene del sueño y establecer horarios regulares para descansar mejor."
+      : valor > 9
+      ? "Dormir más de 9 horas también puede asociarse a mayor riesgo de diabetes. Procura mantener un rango de 7 a 8 horas por noche."
+      : "Tus horas de sueño son adecuadas. Dormir bien ayuda a mantener un metabolismo saludable.",
+  HSD010: (valor) =>
+    valor >= 4
+      ? "Tu salud general podría mejorar. Adopta una dieta equilibrada, haz ejercicio regularmente y realiza chequeos médicos para prevenir enfermedades."
+      : "Tu salud general es buena. Continúa cuidándote para mantener este estado.",
+};
+
 const opcionesCampos = {
   RIAGENDR: [
     { label: "Hombre", value: 1 },
@@ -93,6 +129,7 @@ export default function Formulario() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [factores, setFactores] = useState([]);
+  const [recomendacionesMostradas, setRecomendacionesMostradas] = useState([]);
   const [scatterData, setScatterData] = useState([]);
 
   useEffect(() => {
@@ -212,6 +249,20 @@ export default function Formulario() {
         { limit: 12 }
       );
       setFactores(mensajes);
+
+      // Calcular recomendaciones solo al evaluar riesgo
+      const recomendaciones = Object.entries(recomendacionesPorVariable)
+        .map(([key, fn]) => {
+          const valor = Number(formData[key]);
+          if (valor && !isNaN(valor)) {
+            if (key === "BMXWAIST") return fn(valor, formData);
+            return fn(valor);
+          }
+          return null;
+        })
+        .filter(Boolean);
+      setRecomendacionesMostradas(recomendaciones);
+
     } catch (error) {
       console.error(error);
       alert("Error en la predicción.");
@@ -422,11 +473,29 @@ export default function Formulario() {
                 </div>
               )}
 
+              {recomendacionesMostradas.length > 0 && (
+                <div className="mt-4 p-5 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                    Recomendaciones personalizadas
+                  </h3>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-blue-900">
+                    {recomendacionesMostradas.map((rec, i) => (
+                      <li key={i}>{rec}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-xs text-blue-800/80">
+                    Recuerda: Estas recomendaciones son generales y no
+                    sustituyen el consejo de un profesional de salud.
+                  </p>
+                </div>
+              )}
+
               <div className="mt-6 flex justify-center">
                 <button
                   onClick={() => {
                     setResultado(null);
                     setFactores([]);
+                    setRecomendacionesMostradas([]);
                   }}
                   className="text-blue-600 hover:text-blue-800 font-medium text-sm"
                 >
@@ -475,8 +544,8 @@ export default function Formulario() {
                   width={chartSize.width}
                   height={
                     chartSize.width < 400
-                      ? chartSize.height + 80 // más espacio para la leyenda vertical
-                      : chartSize.height + 60 // un poco más en desktop para margen
+                      ? chartSize.height + 80
+                      : chartSize.height + 60
                   }
                 >
                   <Layer>
@@ -712,8 +781,7 @@ export default function Formulario() {
                   Este gráfico compara tu perfil con el de otras personas según
                   su riesgo de diabetes tipo 2.
                 </p>
-                <div className="my-4" />{" "}
-                {/* Espacio extra entre la intro y la lista */}
+                <div className="my-4" />
                 <ul className="list-disc pl-5 space-y-1">
                   <li>
                     <span className="font-semibold">

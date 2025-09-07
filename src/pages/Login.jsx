@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 
+import ReCAPTCHA from "react-google-recaptcha"; // 👈 Importar librería
+
 import API_URL from "../config";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaToken, setCaptchaToken] = useState(null); // 👈 estado captcha
   const [loading, setLoading] = useState(false); // 👈 estado de carga
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
@@ -16,6 +19,12 @@ const Login = () => {
     e.preventDefault();
     setLoading(true); // 👈 empieza la carga
 
+    if (!captchaToken) {
+      alert("Por favor completa el reCAPTCHA ⚠");
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/users/login`, {
         method: "POST",
@@ -23,6 +32,7 @@ const Login = () => {
         body: JSON.stringify({
           username,
           password,
+          token: captchaToken, // 👈 ahora sí lo mandamos
         }),
       });
 
@@ -80,6 +90,13 @@ const Login = () => {
               required
             />
           </div>
+
+          {/* 👇 Aquí el reCAPTCHA */}
+          <ReCAPTCHA
+            sitekey="6Ldt4MArAAAAAN7cAWahNmxNL4jCOJcttAx--cNz" // 👉 pon la tuya de Google
+            onChange={(token) => setCaptchaToken(token)}
+          />
+
           <button
             type="submit"
             disabled={loading} // Deshabilita mientras carga
