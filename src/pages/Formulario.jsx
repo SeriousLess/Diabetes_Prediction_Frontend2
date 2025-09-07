@@ -97,11 +97,11 @@ const opcionesCampos = {
     { label: "Más de S/ 160,000 al año", value: 12 },
   ],
   HSD010: [
-    { label: "Excelente", value: 1 },
-    { label: "Muy buena", value: 2 },
-    { label: "Buena", value: 3 },
-    { label: "Regular", value: 4 },
-    { label: "Mala", value: 5 },
+    { label: "Excelente 😁", value: 1 },
+    { label: "Muy buena 😃", value: 2 },
+    { label: "Buena 🙂", value: 3 },
+    { label: "Regular 😐", value: 4 },
+    { label: "Mala 😷", value: 5 },
   ],
 };
 
@@ -262,7 +262,6 @@ export default function Formulario() {
         })
         .filter(Boolean);
       setRecomendacionesMostradas(recomendaciones);
-
     } catch (error) {
       console.error(error);
       alert("Error en la predicción.");
@@ -776,31 +775,32 @@ export default function Formulario() {
             </div>
             <div className="w-full max-w-xs md:max-w-sm lg:max-w-md">
               <div className="p-5 bg-gray-50 border rounded-xl shadow-md text-sm">
-                <h2 className="text-lg font-semibold mb-2">Interpretación</h2>
-                <p className="text-gray-700">
+                <h2 className="text-lg font-semibold mb-2">
+                  📊 Interpretación del gráfico
+                </h2>
+                <p className="text-gray-700 mb-3">
                   Este gráfico compara tu perfil con el de otras personas según
-                  su riesgo de diabetes tipo 2.
+                  características de salud como peso, cintura y edad.
                 </p>
-                <div className="my-4" />
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>
-                    <span className="font-semibold">
-                      Cada punto representa un grupo de personas similares.
-                    </span>
-                  </li>
-                  <li>🟢 = Menor riesgo de diabetes.</li>
-                  <li>🔴 = Mayor riesgo de diabetes.</li>
-                  <li>🔵 = Tu resultado.</li>
+                <ul className="list-none pl-0 space-y-1 mb-3">
+                  <li>🟢 = Personas con menor riesgo de diabetes tipo 2</li>
+                  <li>🔴 = Personas con mayor riesgo de diabetes tipo 2</li>
+                  <li>🔵 = Tú</li>
                 </ul>
-                <p className="mt-3 text-gray-700">
-                  Si tu punto azul se acerca a los rojos → tu perfil se parece
-                  al de quienes tienen mayor riesgo. Si está cerca de los verdes
-                  → tu perfil es más parecido al de menor riesgo.
+                <p className="text-gray-700 mb-2">
+                  👉 Si tu punto azul está más cerca de los rojos, tu perfil se
+                  parece al de quienes tienen más riesgo.
+                  <br />
+                  👉 Si está más cerca de los verdes, se parece al de menor
+                  riesgo.
                 </p>
-                <p className="mt-4 text-xs text-gray-500">
-                  <span className="font-semibold">Nota:</span> Este resultado es
-                  solo informativo. Consulta a un profesional de salud para una
-                  evaluación completa.
+                <p className="mt-3 text-xs text-gray-500 border-t pt-2">
+                  <span className="font-semibold">
+                    ⚠️ Este resultado es solo informativo.
+                  </span>{" "}
+                  Puede no coincidir con el otro análisis del sistema, porque
+                  cada método mira la información de forma distinta. Para una
+                  evaluación completa consulta a un profesional de salud.
                 </p>
               </div>
             </div>
