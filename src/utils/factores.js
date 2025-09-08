@@ -32,8 +32,8 @@ const reglas = {
 
   // Edad en años
   RIDAGEYR: (v) => {
-    if (v >= 60) return "La edad (≥ 60) es un factor importante: el riesgo aumenta con la edad.";
-    if (v >= 45) return "La edad (≥ 45) puede incrementar el riesgo: considera controles más frecuentes.";
+    if (v >= 60) return "La edad (>= 60) es un factor importante: el riesgo aumenta con la edad.";
+    if (v >= 45) return "La edad (>= 45) puede incrementar el riesgo: considera controles más frecuentes.";
     if (v < 30) return "Ser menor de 30 años suele asociarse a menor riesgo, mantén hábitos saludables.";
     return null;
   },
@@ -70,8 +70,8 @@ const reglas = {
 
   // IMC
   BMXBMI: (v) => {
-    if (v >= 30) return "IMC en rango de obesidad (≥30): factor de riesgo importante. Valora plan de peso saludable.";
-    if (v >= 25) return "IMC en sobrepeso (25–29.9): trabajar en hábitos puede reducir el riesgo.";
+    if (v >= 30) return "IMC en rango de obesidad (>=30): factor de riesgo importante. Valora plan de peso saludable.";
+    if (v >= 25) return "IMC en sobrepeso (25-29.9): trabajar en hábitos puede reducir el riesgo.";
     if (v < 18.5) return "IMC bajo: cuida que la pérdida de peso no sea involuntaria y mantén una dieta equilibrada.";
     return null;
   },
@@ -80,7 +80,7 @@ const reglas = {
   SLD010H: (v) => {
     if (v < 6) return "Dormir < 6 horas puede alterar metabolismo y aumentar el riesgo. Intenta llegar a 7–8 h.";
     if (v > 9) return "Dormir > 9 horas también puede asociarse a mayor riesgo; procura un rango de 7–8 h.";
-    if (v >= 7 && v <= 8) return "Tu rango de sueño (7–8 h) es adecuado: factor protector.";
+    if (v >= 7 && v <= 8) return "Tu rango de sueño (7-8 h) es adecuado: factor protector.";
     return null;
   },
 

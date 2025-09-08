@@ -1,9 +1,10 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useRef } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { getFactorMessages } from "../utils/factores";
 import { Stage, Layer, Circle, Line, Text, Rect } from "react-konva";
 import API_URL from "../config";
+import jsPDF from "jspdf";
 
 const campos = {
   RIDAGEYR: "Edad (años)",
@@ -16,13 +17,13 @@ const campos = {
   DMDEDUC2: "Nivel educativo (1-5)",
   INDHHIN2: "Ingreso familiar anual (1-12)",
   SLD010H: "Horas de sueño",
-  HSD010: "Salud general (1 = Excelente, 5 = Mala)",
+  HSD010: "Salud general autopercibida (1 = Excelente, 5 = Mala)",
 };
 
 const recomendacionesPorVariable = {
   BMXBMI: (valor) =>
     valor >= 25
-      ? "Tu IMC está por encima del rango saludable (≥25). Mantener un peso adecuado mediante una alimentación balanceada y actividad física regular puede reducir significativamente el riesgo de diabetes tipo 2. Consulta con un nutricionista para un plan personalizado."
+      ? "Tu IMC está por encima del rango saludable (>=25). Mantener un peso adecuado mediante una alimentación balanceada y actividad física regular puede reducir significativamente el riesgo de diabetes tipo 2. Consulta con un nutricionista para un plan personalizado."
       : "Tu IMC está en el rango saludable. Continúa con tus buenos hábitos para mantener tu peso ideal.",
   BMXWAIST: (valor, form) => {
     const sexo = Number(form?.RIAGENDR);
@@ -40,7 +41,7 @@ const recomendacionesPorVariable = {
       : "No tienes antecedentes familiares de diabetes, lo cual disminuye tu riesgo. Aun así, mantén hábitos saludables.",
   PAQ605: (valor) =>
     valor === 2
-      ? "La actividad física varias veces a la semana ayuda a controlar el peso y la glucosa en sangre. Intenta realizar al menos 150 minutos de ejercicio moderado a la semana, como caminar, nadar o andar en bicicleta."
+      ? "La actividad física varias veces por semana ayuda a controlar el peso y la glucosa en sangre. Intenta realizar al menos 150 minutos de ejercicio moderado a la semana, como caminar, nadar o andar en bicicleta."
       : "Tu nivel de actividad física es adecuado. Sigue así para mantener tu salud.",
   SMQ020: (valor) =>
     valor === 1
@@ -97,12 +98,19 @@ const opcionesCampos = {
     { label: "Más de S/ 160,000 al año", value: 12 },
   ],
   HSD010: [
-    { label: "Excelente 😁", value: 1 },
-    { label: "Muy buena 😃", value: 2 },
-    { label: "Buena 🙂", value: 3 },
-    { label: "Regular 😐", value: 4 },
-    { label: "Mala 😷", value: 5 },
+    { label: "Excelente", value: 1 },
+    { label: "Muy buena", value: 2 },
+    { label: "Buena", value: 3 },
+    { label: "Regular", value: 4 },
+    { label: "Mala", value: 5 },
   ],
+};
+
+const getLabel = (campo, valor) => {
+  const opciones = opcionesCampos[campo];
+  if (!opciones) return valor;
+  const op = opciones.find((o) => Number(o.value) === Number(valor));
+  return op ? op.label : valor;
 };
 
 const getRiskLevel = (prob) => {
@@ -131,6 +139,9 @@ export default function Formulario() {
   const [factores, setFactores] = useState([]);
   const [recomendacionesMostradas, setRecomendacionesMostradas] = useState([]);
   const [scatterData, setScatterData] = useState([]);
+
+  // Referencia para el Stage de Konva
+  const stageRef = useRef(null);
 
   useEffect(() => {
     fetch("/pca_coords.json")
@@ -217,6 +228,287 @@ export default function Formulario() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleDescargarPDF = async () => {
+    if (!resultado) return;
+    const doc = new jsPDF();
+    let y = 20;
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // Encabezado principal con fondo degradado azul
+    doc.setFillColor(36, 123, 160); // azul moderno
+    doc.rect(0, 0, 210, 18, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.text("Resultado de tu evaluación de riesgo", 105, 12, {
+      align: "center",
+    });
+
+    // --- Nivel de riesgo ---
+    y = 25;
+    let nivel = getRiskLevel(resultado.supervisado.probabilidad);
+    let colorNivel =
+      nivel === "alto"
+        ? [230, 57, 70] // rojo moderno
+        : nivel === "medio"
+        ? [255, 183, 3] // amarillo moderno
+        : [67, 170, 139]; // verde moderno
+    let colorBordeNivel =
+      nivel === "alto"
+        ? [230, 57, 70]
+        : nivel === "medio"
+        ? [255, 183, 3]
+        : [67, 170, 139];
+    let colorFondoNivel =
+      nivel === "alto"
+        ? [255, 236, 236]
+        : nivel === "medio"
+        ? [255, 249, 224]
+        : [236, 255, 245];
+
+    const riesgoTitulo = "Nivel de riesgo";
+    const riesgoValor =
+      nivel === "alto" ? "Alto" : nivel === "medio" ? "Intermedio" : "Bajo";
+    const riesgoPorcentaje = `Probabilidad: ${(
+      resultado.supervisado.probabilidad * 100
+    ).toFixed(2)}%`;
+
+    const riesgoLines = [riesgoTitulo, riesgoValor, riesgoPorcentaje];
+    const riesgoBoxHeight = 8 + riesgoLines.length * 7;
+    if (y + riesgoBoxHeight > pageHeight - 20) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setFillColor(...colorFondoNivel);
+    doc.setDrawColor(...colorBordeNivel);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(10, y, 190, riesgoBoxHeight, 4, 4, "FD");
+
+    let yRiesgo = y + 9;
+    doc.setFontSize(15);
+    doc.setTextColor(36, 123, 160);
+    doc.text(riesgoTitulo, 15, yRiesgo);
+    yRiesgo += 7;
+    doc.setFontSize(13);
+    doc.setTextColor(...colorNivel);
+    doc.text(riesgoValor, 15, yRiesgo);
+    yRiesgo += 7;
+    doc.setFontSize(12);
+    doc.setTextColor(36, 123, 160);
+    doc.text(riesgoPorcentaje, 15, yRiesgo);
+
+    y = y + riesgoBoxHeight + 4;
+
+    // --- Resumen de datos ---
+    const colorFondoResumen = [245, 247, 250];
+    doc.setFillColor(...colorFondoResumen);
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+
+    let datosLines = [];
+    Object.entries(campos).forEach(([key, label]) => {
+      const valor = formData[key];
+      if (valor !== undefined && valor !== "") {
+        datosLines.push(
+          `${label.split("(")[0].trim()}: ${getLabel(key, valor)}`
+        );
+      }
+    });
+    const resumenTitulo = "Resumen de tus datos:";
+    const resumenTituloLines = doc.splitTextToSize(resumenTitulo, 180);
+    let resumenLines = [...resumenTituloLines];
+    datosLines.forEach((line) => {
+      const l = doc.splitTextToSize(line, 180);
+      resumenLines = resumenLines.concat(l);
+    });
+    const datosHeight = 8 + resumenLines.length * 6 + 4;
+    if (y + datosHeight > pageHeight - 20) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.roundedRect(10, y, 190, datosHeight, 4, 4, "FD");
+    doc.setTextColor(36, 123, 160);
+    doc.setFontSize(13);
+    doc.text(resumenTituloLines, 15, y + 7);
+    let yDatos = y + 7 + resumenTituloLines.length * 6;
+    doc.setFontSize(11);
+    doc.setTextColor(44, 62, 80);
+    datosLines.forEach((line) => {
+      const l = doc.splitTextToSize(line, 180);
+      doc.text(l, 17, yDatos);
+      yDatos += l.length * 6;
+    });
+    y = y + datosHeight + 2;
+
+    // --- Factores ---
+    if (factores.length > 0) {
+      const colorFondoFactores = [255, 248, 225];
+      const colorBordeFactores = [255, 183, 3];
+      doc.setFontSize(13);
+      doc.setTextColor(255, 183, 3);
+      const titulo = "Factores que influyen en tu riesgo:";
+      const tituloLines = doc.splitTextToSize(titulo, 180);
+
+      let lines = [...tituloLines];
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+
+      factores.forEach((f) => {
+        const fLines = doc.splitTextToSize(`- ${f.msg}`, 180);
+        lines = lines.concat(fLines);
+      });
+
+      const boxHeight = 8 + lines.length * 6 + 4;
+      if (y + boxHeight > pageHeight - 20) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFillColor(...colorFondoFactores);
+      doc.setDrawColor(...colorBordeFactores);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(10, y, 190, boxHeight, 4, 4, "FD");
+
+      let yFact = y + 7;
+      doc.setFontSize(13);
+      doc.setTextColor(255, 183, 3);
+      doc.text(tituloLines, 15, yFact);
+      yFact += tituloLines.length * 6;
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+      factores.forEach((f) => {
+        const fLines = doc.splitTextToSize(`- ${f.msg}`, 180);
+        doc.text(fLines, 17, yFact);
+        yFact += fLines.length * 6;
+      });
+      y = y + boxHeight + 2;
+    }
+
+    // --- Recomendaciones ---
+    if (recomendacionesMostradas.length > 0) {
+      const colorFondoRec = [232, 246, 255];
+      const colorBordeRec = [36, 123, 160];
+      doc.setFontSize(13);
+      doc.setTextColor(36, 123, 160);
+      const titulo = "Recomendaciones personalizadas:";
+      const tituloLines = doc.splitTextToSize(titulo, 180);
+
+      let lines = [...tituloLines];
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+
+      recomendacionesMostradas.forEach((rec) => {
+        const recLines = doc.splitTextToSize(`- ${rec}`, 180);
+        lines = lines.concat(recLines);
+      });
+
+      const boxHeight = 8 + lines.length * 6 + 4;
+      if (y + boxHeight > pageHeight - 20) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFillColor(...colorFondoRec);
+      doc.setDrawColor(...colorBordeRec);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(10, y, 190, boxHeight, 4, 4, "FD");
+
+      let yRec = y + 7;
+      doc.setFontSize(13);
+      doc.setTextColor(36, 123, 160);
+      doc.text(tituloLines, 15, yRec);
+      yRec += tituloLines.length * 6;
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+      recomendacionesMostradas.forEach((rec) => {
+        const recLines = doc.splitTextToSize(`- ${rec}`, 180);
+        doc.text(recLines, 17, yRec);
+        yRec += recLines.length * 6;
+      });
+      y = y + boxHeight + 2;
+    }
+
+    // --- Nota final ---
+    doc.setFontSize(10);
+    doc.setTextColor(230, 57, 70);
+    doc.text(
+      "Este resultado es solo informativo. Consulta a un profesional de salud para una evaluación completa.",
+      15,
+      y + 6
+    );
+
+    // --- Gráfico ---
+    if (stageRef.current) {
+      const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 });
+      const imgProps = doc.getImageProperties(dataURL);
+      const pdfWidth = 180;
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      doc.addPage();
+
+      // Encabezado gráfico profesional
+      doc.setFillColor(36, 123, 160); // azul moderno
+      doc.rect(0, 0, 210, 18, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.text("Gráfico de comparación con personas similares", 105, 12, {
+        align: "center",
+      });
+
+      // Imagen del gráfico
+      doc.addImage(dataURL, "PNG", 15, 25, pdfWidth, pdfHeight);
+
+      let leyendaY = 30 + pdfHeight;
+
+      // --- Interpretación del gráfico en un cuadro profesional ---
+      let yInterpretacion = leyendaY;
+      const colorFondoInterpretacion = [232, 246, 255];
+      const colorBordeInterpretacion = [36, 123, 160];
+
+      // Prepara el texto
+      doc.setFontSize(13);
+      doc.setTextColor(36, 123, 160);
+      const interpretacionTitulo = "Interpretación del gráfico";
+      const interpretacionTexto = [
+        "Este gráfico compara tu perfil con el de otras personas, basándose principalmente en el IMC, cintura y edad.",
+        "- Verde: Personas con menor riesgo de diabetes tipo 2",
+        "- Rojo: Personas con mayor riesgo de diabetes tipo 2",
+        "- Azul: Tú",
+        "",
+        "Si tu punto azul está más cerca de los rojos, tu perfil se parece al de quienes tienen más riesgo.",
+        "Si está más cerca de los verdes, se parece al de menor riesgo.",
+        "Este resultado es solo informativo. Puede no coincidir con el otro análisis del sistema, porque cada método mira la información de forma distinta. Para una evaluación completa consulta a un profesional de salud.",
+      ];
+
+      // Calcula la altura del cuadro
+      let lines = [interpretacionTitulo];
+      doc.setFontSize(11);
+      interpretacionTexto.forEach((linea) => {
+        const l = doc.splitTextToSize(linea, 180);
+        lines = lines.concat(l);
+      });
+      const boxHeight = 8 + lines.length * 6 + 4;
+
+      // Dibuja el cuadro
+      doc.setFillColor(...colorFondoInterpretacion);
+      doc.setDrawColor(...colorBordeInterpretacion);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(10, yInterpretacion, 190, boxHeight, 4, 4, "FD");
+
+      // Escribe el texto dentro del cuadro
+      let yText = yInterpretacion + 7;
+      doc.setFontSize(13);
+      doc.setTextColor(36, 123, 160);
+      doc.text(interpretacionTitulo, 15, yText);
+      yText += 8;
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+      interpretacionTexto.forEach((linea) => {
+        const l = doc.splitTextToSize(linea, 180);
+        doc.text(l, 15, yText);
+        yText += l.length * 6;
+      });
+    }
+
+    doc.save("resultado-diabetes.pdf");
   };
 
   const handleSubmit = async (e) => {
@@ -489,7 +781,8 @@ export default function Formulario() {
                 </div>
               )}
 
-              <div className="mt-6 flex justify-center">
+              {/* Botón para reiniciar */}
+              <div className="mt-6 flex flex-col items-center gap-3">
                 <button
                   onClick={() => {
                     setResultado(null);
@@ -532,280 +825,319 @@ export default function Formulario() {
 
       {/* Gráfico y leyenda */}
       {resultado ? (
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <h3 className="text-lg font-bold text-center mb-4">
-            Resultados del Análisis con Personas Similares
-          </h3>
-          <div className="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-12">
-            <div className="w-full md:w-auto flex-shrink-0 flex-grow-0">
-              <div className="w-full overflow-x-auto">
-                <Stage
-                  width={chartSize.width}
-                  height={
-                    chartSize.width < 400
-                      ? chartSize.height + 80
-                      : chartSize.height + 60
-                  }
-                >
-                  <Layer>
-                    {/* Ejes X e Y */}
-                    <Line
-                      points={[
-                        margin,
-                        chartSize.height - margin,
-                        chartSize.width - margin,
-                        chartSize.height - margin,
-                      ]}
-                      stroke="black"
-                      strokeWidth={2}
-                    />
-                    <Line
-                      points={[
-                        margin,
-                        margin,
-                        margin,
-                        chartSize.height - margin,
-                      ]}
-                      stroke="black"
-                      strokeWidth={2}
-                    />
-
-                    {/* Ticks y labels X personalizados */}
-                    {[
-                      { value: xMin, label: "Bajo riesgo" },
-                      { value: xMax, label: "Alto riesgo" },
-                    ].map((tick, i) => {
-                      const x = scaleX(tick.value);
-                      return [
-                        <Line
-                          key={`x-tick-${i}`}
-                          points={[
-                            x,
-                            chartSize.height - margin,
-                            x,
-                            chartSize.height - margin + 5,
-                          ]}
-                          stroke="black"
-                        />,
-                        <Text
-                          key={`x-label-${i}`}
-                          x={i === 0 ? x - 30 : x - 30}
-                          y={chartSize.height - margin + 15}
-                          text={tick.label}
-                          fontSize={12}
-                        />,
-                      ];
-                    })}
-
-                    {/* Ticks Y sin labels */}
-                    {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
-                      const y = scaleY(yMin + v * (yMax - yMin));
-                      return (
-                        <Line
-                          key={`y-tick-${i}`}
-                          points={[margin - 5, y, margin, y]}
-                          stroke="black"
-                        />
-                      );
-                    })}
-
-                    {/* Grid vertical */}
-                    {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
-                      const x = scaleX(xMin + v * (xMax - xMin));
-                      return (
-                        <Line
-                          key={`grid-x-${i}`}
-                          points={[x, margin, x, chartSize.height - margin]}
-                          stroke="lightgray"
-                          strokeWidth={1}
-                        />
-                      );
-                    })}
-
-                    {/* Grid horizontal */}
-                    {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
-                      const y = scaleY(yMin + v * (yMax - yMin));
-                      return (
-                        <Line
-                          key={`grid-y-${i}`}
-                          points={[margin, y, chartSize.width - margin, y]}
-                          stroke="lightgray"
-                          strokeWidth={1}
-                        />
-                      );
-                    })}
-
-                    {/* Puntos */}
-                    {scatterData.map((point, i) => (
-                      <Circle
-                        key={i}
-                        x={scaleX(point.x)}
-                        y={scaleY(point.y)}
-                        radius={4}
-                        fill={clusterColors[point.cluster] || "gray"}
-                        opacity={0.7}
-                      />
-                    ))}
-                    {/* 🔴 Punto del usuario (modelo NS) */}
-                    {resultado?.no_supervisado?.pca_coords && (
-                      <Circle
-                        x={scaleX(resultado.no_supervisado.pca_coords.x)}
-                        y={scaleY(resultado.no_supervisado.pca_coords.y)}
-                        radius={8}
-                        fill="blue"
+        <>
+          <div className="bg-white p-6 rounded-xl shadow-md">
+            <h3 className="text-lg font-bold text-center mb-4">
+              Resultados del Análisis con Personas Similares
+            </h3>
+            <div className="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-12">
+              <div className="w-full md:w-auto flex-shrink-0 flex-grow-0">
+                <div className="w-full overflow-x-auto">
+                  <Stage
+                    ref={stageRef}
+                    width={chartSize.width}
+                    height={
+                      chartSize.width < 400
+                        ? chartSize.height + 80
+                        : chartSize.height + 60
+                    }
+                  >
+                    <Layer>
+                      {/* Ejes X e Y */}
+                      <Line
+                        points={[
+                          margin,
+                          chartSize.height - margin,
+                          chartSize.width - margin,
+                          chartSize.height - margin,
+                        ]}
                         stroke="black"
                         strokeWidth={2}
                       />
-                    )}
-                  </Layer>
+                      <Line
+                        points={[
+                          margin,
+                          margin,
+                          margin,
+                          chartSize.height - margin,
+                        ]}
+                        stroke="black"
+                        strokeWidth={2}
+                      />
 
-                  {/* Leyenda: vertical en móvil, horizontal en desktop */}
-                  {chartSize.width < 400 ? (
-                    <Layer>
-                      <Rect
-                        x={margin}
-                        y={chartSize.height - margin + 35}
-                        width={chartSize.width - 2 * margin}
-                        height={90}
-                        fill="white"
-                        stroke="black"
-                        cornerRadius={10}
-                        shadowBlur={5}
-                      />
-                      {/* Menor riesgo */}
-                      <Circle
-                        x={margin + 20}
-                        y={chartSize.height - margin + 55}
-                        radius={6}
-                        fill="green"
-                      />
-                      <Text
-                        x={margin + 40}
-                        y={chartSize.height - margin + 48}
-                        text="Menor riesgo"
-                        fontSize={14}
-                        fill="black"
-                      />
-                      {/* Mayor riesgo */}
-                      <Circle
-                        x={margin + 20}
-                        y={chartSize.height - margin + 80}
-                        radius={6}
-                        fill="red"
-                      />
-                      <Text
-                        x={margin + 40}
-                        y={chartSize.height - margin + 73}
-                        text="Mayor riesgo"
-                        fontSize={14}
-                        fill="black"
-                      />
-                      {/* Tú */}
-                      <Circle
-                        x={margin + 20}
-                        y={chartSize.height - margin + 105}
-                        radius={6}
-                        fill="blue"
-                        stroke="black"
-                      />
-                      <Text
-                        x={margin + 40}
-                        y={chartSize.height - margin + 98}
-                        text="Tú"
-                        fontSize={14}
-                        fill="black"
-                      />
+                      {/* Ticks y labels X personalizados */}
+                      {[
+                        { value: xMin, label: "Bajo riesgo" },
+                        { value: xMax, label: "Alto riesgo" },
+                      ].map((tick, i) => {
+                        const x = scaleX(tick.value);
+                        return [
+                          <Line
+                            key={`x-tick-${i}`}
+                            points={[
+                              x,
+                              chartSize.height - margin,
+                              x,
+                              chartSize.height - margin + 5,
+                            ]}
+                            stroke="black"
+                          />,
+                          <Text
+                            key={`x-label-${i}`}
+                            x={i === 0 ? x - 30 : x - 30}
+                            y={chartSize.height - margin + 15}
+                            text={tick.label}
+                            fontSize={12}
+                          />,
+                        ];
+                      })}
+
+                      {/* Ticks Y sin labels */}
+                      {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
+                        const y = scaleY(yMin + v * (yMax - yMin));
+                        return (
+                          <Line
+                            key={`y-tick-${i}`}
+                            points={[margin - 5, y, margin, y]}
+                            stroke="black"
+                          />
+                        );
+                      })}
+
+                      {/* Grid vertical */}
+                      {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
+                        const x = scaleX(xMin + v * (xMax - xMin));
+                        return (
+                          <Line
+                            key={`grid-x-${i}`}
+                            points={[x, margin, x, chartSize.height - margin]}
+                            stroke="lightgray"
+                            strokeWidth={1}
+                          />
+                        );
+                      })}
+
+                      {/* Grid horizontal */}
+                      {[0, 0.25, 0.5, 0.75, 1].map((v, i) => {
+                        const y = scaleY(yMin + v * (yMax - yMin));
+                        return (
+                          <Line
+                            key={`grid-y-${i}`}
+                            points={[margin, y, chartSize.width - margin, y]}
+                            stroke="lightgray"
+                            strokeWidth={1}
+                          />
+                        );
+                      })}
+
+                      {/* Puntos */}
+                      {scatterData.map((point, i) => (
+                        <Circle
+                          key={i}
+                          x={scaleX(point.x)}
+                          y={scaleY(point.y)}
+                          radius={4}
+                          fill={clusterColors[point.cluster] || "gray"}
+                          opacity={0.7}
+                        />
+                      ))}
+                      {/* 🔴 Punto del usuario (modelo NS) */}
+                      {resultado?.no_supervisado?.pca_coords && (
+                        <Circle
+                          x={scaleX(resultado.no_supervisado.pca_coords.x)}
+                          y={scaleY(resultado.no_supervisado.pca_coords.y)}
+                          radius={8}
+                          fill="blue"
+                          stroke="black"
+                          strokeWidth={2}
+                        />
+                      )}
                     </Layer>
-                  ) : (
-                    <Layer>
-                      <Rect
-                        x={margin + chartSize.legendX}
-                        y={chartSize.height - margin + 35}
-                        width={chartSize.legendWidth}
-                        height={40}
-                        fill="white"
-                        stroke="black"
-                        cornerRadius={10}
-                        shadowBlur={5}
-                      />
-                      <Circle
-                        x={margin + 60}
-                        y={chartSize.height - margin + 55}
-                        radius={6}
-                        fill="green"
-                      />
-                      <Text
-                        x={margin + 70}
-                        y={chartSize.height - margin + 50}
-                        text="Grupo de menor riesgo"
-                        fontSize={14}
-                        fill="black"
-                      />
-                      <Circle
-                        x={margin + 235}
-                        y={chartSize.height - margin + 55}
-                        radius={6}
-                        fill="red"
-                      />
-                      <Text
-                        x={margin + 245}
-                        y={chartSize.height - margin + 50}
-                        text="Grupo de mayor riesgo"
-                        fontSize={14}
-                        fill="black"
-                      />
-                      <Circle
-                        x={margin + 410}
-                        y={chartSize.height - margin + 55}
-                        radius={6}
-                        fill="blue"
-                        stroke="black"
-                      />
-                      <Text
-                        x={margin + 420}
-                        y={chartSize.height - margin + 50}
-                        text="Tu evaluación"
-                        fontSize={14}
-                        fill="black"
-                      />
-                    </Layer>
-                  )}
-                </Stage>
+
+                    {/* Leyenda: vertical en móvil, horizontal en desktop */}
+                    {chartSize.width < 400 ? (
+                      <Layer>
+                        <Rect
+                          x={margin}
+                          y={chartSize.height - margin + 35}
+                          width={chartSize.width - 2 * margin}
+                          height={90}
+                          fill="white"
+                          stroke="black"
+                          cornerRadius={10}
+                          shadowBlur={5}
+                        />
+                        {/* Menor riesgo */}
+                        <Circle
+                          x={margin + 20}
+                          y={chartSize.height - margin + 55}
+                          radius={6}
+                          fill="green"
+                        />
+                        <Text
+                          x={margin + 40}
+                          y={chartSize.height - margin + 48}
+                          text="Menor riesgo"
+                          fontSize={14}
+                          fill="black"
+                        />
+                        {/* Mayor riesgo */}
+                        <Circle
+                          x={margin + 20}
+                          y={chartSize.height - margin + 80}
+                          radius={6}
+                          fill="red"
+                        />
+                        <Text
+                          x={margin + 40}
+                          y={chartSize.height - margin + 73}
+                          text="Mayor riesgo"
+                          fontSize={14}
+                          fill="black"
+                        />
+                        {/* Tú */}
+                        <Circle
+                          x={margin + 20}
+                          y={chartSize.height - margin + 105}
+                          radius={6}
+                          fill="blue"
+                          stroke="black"
+                        />
+                        <Text
+                          x={margin + 40}
+                          y={chartSize.height - margin + 98}
+                          text="Tú"
+                          fontSize={14}
+                          fill="black"
+                        />
+                      </Layer>
+                    ) : (
+                      <Layer>
+                        <Rect
+                          x={margin + chartSize.legendX}
+                          y={chartSize.height - margin + 35}
+                          width={chartSize.legendWidth}
+                          height={40}
+                          fill="white"
+                          stroke="black"
+                          cornerRadius={10}
+                          shadowBlur={5}
+                        />
+                        <Circle
+                          x={margin + 60}
+                          y={chartSize.height - margin + 55}
+                          radius={6}
+                          fill="green"
+                        />
+                        <Text
+                          x={margin + 70}
+                          y={chartSize.height - margin + 50}
+                          text="Grupo de menor riesgo"
+                          fontSize={14}
+                          fill="black"
+                        />
+                        <Circle
+                          x={margin + 235}
+                          y={chartSize.height - margin + 55}
+                          radius={6}
+                          fill="red"
+                        />
+                        <Text
+                          x={margin + 245}
+                          y={chartSize.height - margin + 50}
+                          text="Grupo de mayor riesgo"
+                          fontSize={14}
+                          fill="black"
+                        />
+                        <Circle
+                          x={margin + 410}
+                          y={chartSize.height - margin + 55}
+                          radius={6}
+                          fill="blue"
+                          stroke="black"
+                        />
+                        <Text
+                          x={margin + 420}
+                          y={chartSize.height - margin + 50}
+                          text="Tu evaluación"
+                          fontSize={14}
+                          fill="black"
+                        />
+                      </Layer>
+                    )}
+                  </Stage>
+                </div>
               </div>
-            </div>
-            <div className="w-full max-w-xs md:max-w-sm lg:max-w-md">
-              <div className="p-5 bg-gray-50 border rounded-xl shadow-md text-sm">
-                <h2 className="text-lg font-semibold mb-2">
-                  📊 Interpretación del gráfico
-                </h2>
-                <p className="text-gray-700 mb-3">
-                  Este gráfico compara tu perfil con el de otras personas según
-                  características de salud como peso, cintura y edad.
-                </p>
-                <ul className="list-none pl-0 space-y-1 mb-3">
-                  <li>🟢 = Personas con menor riesgo de diabetes tipo 2</li>
-                  <li>🔴 = Personas con mayor riesgo de diabetes tipo 2</li>
-                  <li>🔵 = Tú</li>
-                </ul>
-                <p className="text-gray-700 mb-2">
-                  👉 Si tu punto azul está más cerca de los rojos, tu perfil se
-                  parece al de quienes tienen más riesgo.
-                  <br />
-                  👉 Si está más cerca de los verdes, se parece al de menor
-                  riesgo.
-                </p>
-                <p className="mt-3 text-xs text-gray-500 border-t pt-2">
-                  <span className="font-semibold">
-                    ⚠️ Este resultado es solo informativo.
-                  </span>{" "}
-                  Puede no coincidir con el otro análisis del sistema, porque
-                  cada método mira la información de forma distinta. Para una
-                  evaluación completa consulta a un profesional de salud.
-                </p>
+              <div className="w-full max-w-xs md:max-w-sm lg:max-w-md">
+                <div className="p-5 bg-gray-50 border rounded-xl shadow-md text-sm">
+                  <h2 className="text-lg font-semibold mb-2">
+                    📊 Interpretación del gráfico
+                  </h2>
+                  <p className="text-gray-700 mb-3">
+                    Este gráfico compara tu perfil con el de otras personas,
+                    basándose principalmente en el IMC, cintura y edad.
+                  </p>
+                  <ul className="list-none pl-0 space-y-1 mb-3">
+                    <li>🟢 = Personas con menor riesgo de diabetes tipo 2</li>
+                    <li>🔴 = Personas con mayor riesgo de diabetes tipo 2</li>
+                    <li>🔵 = Tú</li>
+                  </ul>
+                  <p className="text-gray-700 mb-2">
+                    👉 Si tu punto azul está más cerca de los rojos, tu perfil
+                    se parece al de quienes tienen más riesgo.
+                    <br />
+                    👉 Si está más cerca de los verdes, se parece al de menor
+                    riesgo.
+                  </p>
+                  <p className="mt-3 text-xs text-gray-500 border-t pt-2">
+                    <span className="font-semibold">
+                      ⚠️ Este resultado es solo informativo.
+                    </span>{" "}
+                    Puede no coincidir con el otro análisis del sistema, porque
+                    cada método mira la información de forma distinta. Para una
+                    evaluación completa consulta a un profesional de salud.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+          {/* Botón para descargar PDF abarcando todo */}
+          <div className="flex justify-center my-8">
+            <button
+              onClick={handleDescargarPDF}
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg shadow flex items-center gap-2"
+            >
+              {/* Icono PDF SVG */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <rect
+                  x="2"
+                  y="2"
+                  width="20"
+                  height="20"
+                  rx="3"
+                  fill="#E53935"
+                />
+                <text
+                  x="12"
+                  y="17"
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="bold"
+                  fill="white"
+                  fontFamily="Arial, Helvetica, sans-serif"
+                >
+                  PDF
+                </text>
+              </svg>
+              Descargar evaluación en PDF
+            </button>
+          </div>
+        </>
       ) : null}
 
       <footer className="bg-gray-800 text-white py-8 px-6 mt-8">
