@@ -38,7 +38,6 @@ const Login = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("✅ Token recibido:", data.access_token);
 
         // Guardar token en localStorage
         login(data.access_token, username); // 👈 Guardamos token y usuario en contexto
