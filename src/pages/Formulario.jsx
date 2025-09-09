@@ -158,7 +158,7 @@ export default function Formulario() {
 
   useEffect(() => {
     if (imcMode === "calcular" && peso > 0 && talla > 0) {
-      const tallaEnMetros = talla > 3 ? talla : talla / 100;
+      const tallaEnMetros = talla / 100;
       const imcCalculado = peso / (tallaEnMetros * tallaEnMetros);
       setFormData((prev) => ({
         ...prev,
