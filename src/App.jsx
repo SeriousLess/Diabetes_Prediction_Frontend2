@@ -4,6 +4,7 @@ import Formulario from "./pages/Formulario";
 import Login from "./pages/Login";
 import Historial from "./pages/Historial";
 import Register from "./pages/Register";
+import Ayuda from "./pages/Ayuda";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/historial" element={<Historial />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/ayuda" element={<Ayuda />} />
       </Routes>
     </Router>
   );

@@ -120,9 +120,12 @@ const Home = () => {
             >
               Iniciar Sesión
             </Link>
-            <button className="bg-white hover:bg-gray-100 text-blue-600 font-semibold py-3 px-8 rounded-lg border border-blue-600 shadow-md transition duration-300">
+            <Link
+              to="/ayuda"
+              className="bg-white hover:bg-gray-100 text-blue-600 font-semibold py-3 px-8 rounded-lg border border-blue-600 shadow-md transition duration-300"
+            >
               Ayuda
-            </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -136,9 +139,8 @@ const Home = () => {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-lg text-gray-600 mb-6">
-                Completa el formulario con tus datos personales.
-                Obtén un análisis claro y visual de tu riesgo de diabetes tipo
-                2.
+                Completa el formulario con tus datos personales. Obtén un
+                análisis claro y visual de tu riesgo de diabetes tipo 2.
               </p>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 Datos necesarios para la evaluación
@@ -270,7 +272,7 @@ const Home = () => {
       </section>
 
       {/* Testimonial Section */}
-      <section className="py-16 px-6 bg-white">
+      {/*<section className="py-16 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">
             Lo que dicen nuestros usuarios
@@ -300,7 +302,7 @@ const Home = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section>*/}
 
       {/* CTA Section */}
       <section className="py-16 px-6 bg-blue-600 text-white">
