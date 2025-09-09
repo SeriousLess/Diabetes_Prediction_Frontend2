@@ -41,7 +41,7 @@ const recomendacionesPorVariable = {
       : "No tienes antecedentes familiares de diabetes, lo cual disminuye tu riesgo. Aun así, mantén hábitos saludables.",
   PAQ605: (valor) =>
     valor === 2
-      ? "La actividad física varias veces por semana ayuda a controlar el peso y la glucosa en sangre. Intenta realizar al menos 150 minutos de ejercicio moderado a la semana, como caminar, nadar o andar en bicicleta."
+      ? "La actividad física varias veces por semana te ayudaría a mantener un peso saludable y a controlar el peso y la glucosa en sangre. Intenta realizar al menos 150 minutos de ejercicio moderado a la semana, como caminar, nadar o andar en bicicleta."
       : "Tu nivel de actividad física es adecuado. Sigue así para mantener tu salud.",
   SMQ020: (valor) =>
     valor === 1
@@ -96,6 +96,7 @@ const opcionesCampos = {
     { label: "S/ 120,000 - 140,000 al año", value: 10 },
     { label: "S/ 140,000 - 160,000 al año", value: 11 },
     { label: "Más de S/ 160,000 al año", value: 12 },
+    { label: "Prefiero no responder", value: 77 },
   ],
   HSD010: [
     { label: "Excelente", value: 1 },
@@ -136,6 +137,11 @@ export default function Formulario() {
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [imcMode, setImcMode] = useState("directo"); // 'directo' o 'calcular'
+  const [peso, setPeso] = useState(""); // en kg
+  const [talla, setTalla] = useState(""); // en cm
+  const [waistMode, setWaistMode] = useState("directo"); // 'directo' o 'aproximado'
+
   const [factores, setFactores] = useState([]);
   const [recomendacionesMostradas, setRecomendacionesMostradas] = useState([]);
   const [scatterData, setScatterData] = useState([]);
@@ -150,6 +156,41 @@ export default function Formulario() {
       .catch((err) => console.error("Error cargando JSON:", err));
   }, []);
 
+  useEffect(() => {
+    if (imcMode === "calcular" && peso > 0 && talla > 0) {
+      const tallaEnMetros = talla > 3 ? talla : talla / 100;
+      const imcCalculado = peso / (tallaEnMetros * tallaEnMetros);
+      setFormData((prev) => ({
+        ...prev,
+        BMXBMI: imcCalculado.toFixed(2),
+      }));
+    }
+  }, [peso, talla, imcMode]);
+
+  const opcionesCintura = [
+    {
+      label: (sexo) => (sexo === 1 ? "Delgado" : "Delgada"),
+      mujer: 70,
+      hombre: 80,
+    },
+    { label: () => "Promedio", mujer: 82, hombre: 95 },
+    {
+      label: () => "Abdomen un poco pronunciado",
+      mujer: 90,
+      hombre: 100,
+    },
+    {
+      label: (sexo) => (sexo === 1 ? "Abdomen grande" : "Abdomen grande"),
+      mujer: 100,
+      hombre: 110,
+    },
+  ];
+
+  const handleWaistChange = (opcion) => {
+    const sexo = Number(formData.RIAGENDR);
+    const valor = sexo === 1 ? opcion.hombre : opcion.mujer;
+    setFormData({ ...formData, BMXWAIST: valor });
+  };
   const clusterColors = {
     0: "red",
     1: "green",
@@ -606,47 +647,233 @@ export default function Formulario() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(campos).map(([key, label]) => (
-                  <div key={key} className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">
-                      {label.split("(")[0].trim()}
-                      {label.includes("(") && (
-                        <span className="text-xs text-gray-500 block">
-                          {label.match(/\(([^)]+)\)/)[1]}
-                        </span>
+                {Object.entries(campos).map(([key, label]) => {
+                  if (key === "BMXBMI") {
+                    return (
+                      <div key={key} className="space-y-1 md:col-span-2">
+                        <div className="flex items-center gap-4 mb-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            {label.split("(")[0].trim()}
+                          </label>
+                          <div className="flex items-center rounded-lg bg-gray-100 p-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setImcMode("directo")}
+                              className={`px-2 py-1 text-xs rounded-md ${
+                                imcMode === "directo"
+                                  ? "bg-white shadow-sm text-blue-600 font-semibold"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              Ingresar IMC
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setImcMode("calcular")}
+                              className={`px-2 py-1 text-xs rounded-md ${
+                                imcMode === "calcular"
+                                  ? "bg-white shadow-sm text-blue-600 font-semibold"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              Calcular con Peso y Talla
+                            </button>
+                          </div>
+                        </div>
+
+                        {imcMode === "directo" ? (
+                          <div className="relative">
+                            <input
+                              type="number"
+                              name="BMXBMI"
+                              value={formData.BMXBMI}
+                              onChange={handleChange}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                              min="0"
+                              step="any"
+                              placeholder="Ej: 24.5"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                              kg/m²
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div>
+                              <label className="text-sm font-medium text-gray-600 block mb-1">
+                                Peso (kg)
+                              </label>
+                              <input
+                                type="number"
+                                value={peso}
+                                onChange={(e) => setPeso(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                                min="0"
+                                step="any"
+                                placeholder="Ej: 70"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-600 block mb-1">
+                                Talla (cm)
+                              </label>
+                              <input
+                                type="number"
+                                value={talla}
+                                onChange={(e) => setTalla(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                                min="0"
+                                step="any"
+                                placeholder="Ej: 175"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <label className="text-sm font-medium text-gray-600 block mb-1">
+                                IMC Calculado
+                              </label>
+                              <input
+                                type="text"
+                                name="BMXBMI"
+                                value={
+                                  formData.BMXBMI
+                                    ? `${formData.BMXBMI} kg/m²`
+                                    : "Calculando..."
+                                }
+                                readOnly
+                                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 cursor-not-allowed"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  if (key === "BMXWAIST") {
+                    return (
+                      <div key={key} className="space-y-1 md:col-span-2">
+                        <div className="flex items-center gap-4 mb-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            {label.split("(")[0].trim()}
+                          </label>
+                          <div className="flex items-center rounded-lg bg-gray-100 p-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setWaistMode("directo")}
+                              className={`px-2 py-1 text-xs rounded-md ${
+                                waistMode === "directo"
+                                  ? "bg-white shadow-sm text-blue-600 font-semibold"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              Ingresar Medida
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setWaistMode("aproximado")}
+                              className={`px-2 py-1 text-xs rounded-md ${
+                                waistMode === "aproximado"
+                                  ? "bg-white shadow-sm text-blue-600 font-semibold"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              Elegir Aproximado
+                            </button>
+                          </div>
+                        </div>
+
+                        {waistMode === "directo" ? (
+                          <div className="relative">
+                            <input
+                              type="number"
+                              name="BMXWAIST"
+                              value={formData.BMXWAIST}
+                              onChange={handleChange}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                              min="30"
+                              max="250"
+                              step="any"
+                              placeholder="Ej: 90"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">cm</span>
+                          </div>
+                        ) : !formData.RIAGENDR ? (
+                          <div className="p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg border border-yellow-200">
+                            Por favor, selecciona primero tu sexo para ver las opciones.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            {opcionesCintura.map((op) => (
+                              <button
+                                key={op.label}
+                                type="button"
+                                onClick={() => handleWaistChange(op)}
+                                className="text-center p-2 border rounded-lg hover:bg-blue-100 hover:border-blue-400 transition flex flex-col items-center justify-center"
+                              >
+                                <span>
+                                  {op.label(Number(formData.RIAGENDR))}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  (≈{" "}
+                                  {Number(formData.RIAGENDR) === 1
+                                    ? op.hombre
+                                    : op.mujer}{" "}
+                                  cm)
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={key} className="space-y-1">
+                      <label className="text-sm font-medium text-gray-700">
+                        {label.split("(")[0].trim()}
+                        {label.includes("(") && (
+                          <span className="text-xs text-gray-500 block">
+                            {label.match(/\(([^)]+)\)/)[1]}
+                          </span>
+                        )}
+                      </label>
+                      {opcionesCampos[key] ? (
+                        <select
+                          name={key}
+                          value={formData[key]}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        >
+                          <option value="">Selecciona una opción</option>
+                          {opcionesCampos[key].map((op) => (
+                            <option key={op.value} value={op.value}>
+                              {op.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="number"
+                          name={key}
+                          value={formData[key]}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                          min="0"
+                          step={
+                            key === "BMXBMI" || key === "BMXWAIST" ? "any" : "1"
+                          }
+                        />
                       )}
-                    </label>
-                    {opcionesCampos[key] ? (
-                      <select
-                        name={key}
-                        value={formData[key]}
-                        onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">Selecciona una opción</option>
-                        {opcionesCampos[key].map((op) => (
-                          <option key={op.value} value={op.value}>
-                            {op.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="number"
-                        name={key}
-                        value={formData[key]}
-                        onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                        min="0"
-                        step={
-                          key === "BMXBMI" || key === "BMXWAIST" ? "any" : "1"
-                        }
-                      />
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="pt-4">
