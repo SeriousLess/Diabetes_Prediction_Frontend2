@@ -59,10 +59,10 @@ export default function Ayuda() {
                   Ingresa tu edad, sexo, medidas corporales y otros datos
                   solicitados en el formulario.
                 </li>
-                <li>
+                {/*<li>
                   Si tienes dudas sobre algún campo, pasa el cursor sobre el
                   texto para ver detalles o unidades.
-                </li>
+                </li>*/}
                 <li>
                   Todos los campos son obligatorios para obtener una evaluación
                   precisa.

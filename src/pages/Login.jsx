@@ -43,7 +43,7 @@ const Login = () => {
         login(data.access_token, username); // 👈 Guardamos token y usuario en contexto
 
         alert("Login exitoso ✅");
-        navigate("/formulario"); // 👈 Igual seguimos redirigiendo
+        navigate("/"); // 👈 Igual seguimos redirigiendo
       } else {
         const errorData = await response.json();
         alert("❌ Error en login: " + errorData.detail);
