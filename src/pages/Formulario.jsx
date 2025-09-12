@@ -799,11 +799,14 @@ export default function Formulario() {
                               step="any"
                               placeholder="Ej: 90"
                             />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">cm</span>
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                              cm
+                            </span>
                           </div>
                         ) : !formData.RIAGENDR ? (
                           <div className="p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg border border-yellow-200">
-                            Por favor, selecciona primero tu sexo para ver las opciones.
+                            Por favor, selecciona primero tu sexo para ver las
+                            opciones.
                           </div>
                         ) : (
                           <div className="grid grid-cols-2 gap-2">
@@ -812,7 +815,14 @@ export default function Formulario() {
                                 key={op.label}
                                 type="button"
                                 onClick={() => handleWaistChange(op)}
-                                className="text-center p-2 border rounded-lg hover:bg-blue-100 hover:border-blue-400 transition flex flex-col items-center justify-center"
+                                className={`text-center p-2 border rounded-lg transition flex flex-col items-center justify-center ${
+                                  Number(formData.BMXWAIST) ===
+                                  (Number(formData.RIAGENDR) === 1
+                                    ? op.hombre
+                                    : op.mujer)
+                                    ? "bg-blue-100 border-blue-500 ring-2 ring-blue-400"
+                                    : "hover:bg-blue-50 hover:border-blue-400"
+                                }`}
                               >
                                 <span>
                                   {op.label(Number(formData.RIAGENDR))}
@@ -916,9 +926,9 @@ export default function Formulario() {
                           : "bg-green-50 border-l-4 border-green-500"
                       }`}
                     >
-                      <div className="flex items-center justify-center space-x-4">
+                      <div className="flex items-center justify-between">
                         <div
-                          className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center ${
+                          className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center mr-4 ${
                             nivel === "alto"
                               ? "bg-red-100"
                               : nivel === "medio"
@@ -942,7 +952,7 @@ export default function Formulario() {
                               : "✓"}
                           </span>
                         </div>
-                        <div>
+                        <div className="flex-grow">
                           <h3
                             className={`text-xl font-bold ${
                               nivel === "alto"
@@ -958,7 +968,7 @@ export default function Formulario() {
                               ? "Riesgo Intermedio"
                               : "Sin Riesgo"}
                           </h3>
-                          <p className="text-gray-600">
+                          <div className="text-gray-600">
                             Probabilidad:{" "}
                             <span className="font-bold">
                               {(
@@ -966,7 +976,22 @@ export default function Formulario() {
                               ).toFixed(2)}
                               %
                             </span>
-                          </p>
+                          </div>
+                        </div>
+                        {/* Leyenda vertical a la derecha */}
+                        <div className="pl-4 ml-4 border-l border-gray-300 flex flex-col gap-1.5 text-xs">
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                            Alto (&gt;66%)
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+                            Medio (33-66%)
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                            Bajo (&lt;33%)
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -974,7 +999,7 @@ export default function Formulario() {
                 })()}
 
               {factores.length > 0 && (
-                <div className="mt-4 p-5 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="mt-6 p-5 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <h3 className="text-lg font-semibold text-yellow-800 mb-2">
                     Factores que influyen en tu riesgo
                   </h3>
