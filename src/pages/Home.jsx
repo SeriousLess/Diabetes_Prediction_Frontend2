@@ -27,36 +27,6 @@ const Home = () => {
             Plataforma de predicción de diabetes tipo 2
           </h1>
           <div className="hidden md:flex space-x-6">
-            {/*<button
-              className={`px-3 py-2 ${
-                activeTab === "home"
-                  ? "text-blue-600 font-semibold"
-                  : "text-gray-600"
-              }`}
-              onClick={() => setActiveTab("home")}
-            >
-              Inicio
-            </button>
-            <button
-              className={`px-3 py-2 ${
-                activeTab === "faq"
-                  ? "text-blue-600 font-semibold"
-                  : "text-gray-600"
-              }`}
-              onClick={() => setActiveTab("faq")}
-            >
-              Preguntas
-            </button>
-            <button
-              className={`px-3 py-2 ${
-                activeTab === "contact"
-                  ? "text-blue-600 font-semibold"
-                  : "text-gray-600"
-              }`}
-              onClick={() => setActiveTab("contact")}
-            >
-              Contacto
-            </button>*/}
             {user ? (
               <>
                 <Link
@@ -100,9 +70,13 @@ const Home = () => {
                       >
                         Cerrar sesión
                       </button>
-                      {/*<button className="block w-full text-left px-4 py-2 text-blue-700 hover:bg-blue-50 rounded-t-lg">
+                      <Link
+                        to="/editar-perfil"
+                        className="block w-full text-left px-4 py-2 text-blue-700 hover:bg-blue-50 rounded-t-lg"
+                      >
                         Editar perfil
-                      </button>*/}
+                      </Link>
+                      
                     </div>
                   )}
                 </div>
@@ -383,6 +357,7 @@ const Home = () => {
               <li>Lima, Perú</li>
             </ul>
           </div>
+          {/*
           <div>
             <h4 className="text-lg font-semibold mb-4">Síguenos</h4>
             <div className="flex space-x-4">
@@ -425,7 +400,7 @@ const Home = () => {
                 </svg>
               </a>
             </div>
-          </div>
+          </div>*/}
         </div>
         <div className="max-w-6xl mx-auto pt-8 mt-8 border-t border-gray-700 text-center text-gray-400">
           <p>
