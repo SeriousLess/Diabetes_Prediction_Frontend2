@@ -1,7 +1,8 @@
 import axios from "axios";
+import API_URL from "../config";
 
 const API = axios.create({
-  baseURL: "http://localhost:8000", // ⚠️ en producción cambia a tu backend de Render
+  baseURL: API_URL, // 👈 Ahora toma el valor correcto (Render en producción, localhost en dev)
 });
 
 // Interceptor: agrega el token automáticamente si existe
