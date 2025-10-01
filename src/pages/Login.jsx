@@ -38,12 +38,27 @@ const Login = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("✅ Datos recibidos del backend en login:", data);
 
-        // Guardar token en localStorage
-        login(data.access_token, username); // 👈 Guardamos token y usuario en contexto
+        // 🔹 Llamar a /users/me para obtener email y username reales
+        const meResponse = await fetch(`${API_URL}/users/me`, {
+          headers: {
+            Authorization: `Bearer ${data.access_token}`,
+          },
+        });
 
-        alert("Login exitoso ✅");
-        navigate("/"); // 👈 Igual seguimos redirigiendo
+        if (meResponse.ok) {
+          const meData = await meResponse.json();
+          console.log("📩 Datos del usuario en /me:", meData);
+
+          // Guardar token y user completo en contexto
+          login(data.access_token, meData);
+
+          alert("Login exitoso ✅");
+          navigate("/");
+        } else {
+          alert("❌ No se pudo obtener la información del usuario");
+        }
       } else {
         const errorData = await response.json();
         alert("❌ Error en login: " + errorData.detail);

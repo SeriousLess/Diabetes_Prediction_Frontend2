@@ -6,6 +6,8 @@ import { Stage, Layer, Circle, Line, Text, Rect } from "react-konva";
 import API_URL from "../config";
 import jsPDF from "jspdf";
 
+import axios from "axios";
+
 const campos = {
   RIDAGEYR: "Edad (años)",
   RIAGENDR: "Sexo (1 = Hombre, 2 = Mujer)",
@@ -550,6 +552,300 @@ export default function Formulario() {
     }
 
     doc.save("resultado-diabetes.pdf");
+  };
+
+  const enviarPDFporCorreo = async (
+    user,
+    resultado,
+    formData,
+    campos,
+    factores,
+    recomendacionesMostradas,
+    stageRef
+  ) => {
+    console.log("👤 Objeto user recibido:", user);
+    const doc = new jsPDF();
+    let y = 20;
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // Encabezado principal
+    doc.setFillColor(36, 123, 160);
+    doc.rect(0, 0, 210, 18, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.text("Resultado de tu evaluación de riesgo", 105, 12, {
+      align: "center",
+    });
+
+    // --- Nivel de riesgo ---
+    y = 25;
+    let nivel = getRiskLevel(resultado.supervisado.probabilidad);
+    let colorNivel =
+      nivel === "alto"
+        ? [230, 57, 70]
+        : nivel === "medio"
+        ? [255, 183, 3]
+        : [67, 170, 139];
+    let colorBordeNivel = colorNivel;
+    let colorFondoNivel =
+      nivel === "alto"
+        ? [255, 236, 236]
+        : nivel === "medio"
+        ? [255, 249, 224]
+        : [236, 255, 245];
+
+    const riesgoTitulo = "Nivel de riesgo";
+    const riesgoValor =
+      nivel === "alto" ? "Alto" : nivel === "medio" ? "Intermedio" : "Bajo";
+    const riesgoPorcentaje = `Probabilidad: ${(
+      resultado.supervisado.probabilidad * 100
+    ).toFixed(2)}%`;
+
+    const riesgoLines = [riesgoTitulo, riesgoValor, riesgoPorcentaje];
+    const riesgoBoxHeight = 8 + riesgoLines.length * 7;
+    if (y + riesgoBoxHeight > pageHeight - 20) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setFillColor(...colorFondoNivel);
+    doc.setDrawColor(...colorBordeNivel);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(10, y, 190, riesgoBoxHeight, 4, 4, "FD");
+
+    let yRiesgo = y + 9;
+    doc.setFontSize(15);
+    doc.setTextColor(36, 123, 160);
+    doc.text(riesgoTitulo, 15, yRiesgo);
+    yRiesgo += 7;
+    doc.setFontSize(13);
+    doc.setTextColor(...colorNivel);
+    doc.text(riesgoValor, 15, yRiesgo);
+    yRiesgo += 7;
+    doc.setFontSize(12);
+    doc.setTextColor(36, 123, 160);
+    doc.text(riesgoPorcentaje, 15, yRiesgo);
+
+    y = y + riesgoBoxHeight + 4;
+
+    // --- Resumen de datos ---
+    const colorFondoResumen = [245, 247, 250];
+    doc.setFillColor(...colorFondoResumen);
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+
+    let datosLines = [];
+    Object.entries(campos).forEach(([key, label]) => {
+      const valor = formData[key];
+      if (valor !== undefined && valor !== "") {
+        datosLines.push(
+          `${label.split("(")[0].trim()}: ${getLabel(key, valor)}`
+        );
+      }
+    });
+    const resumenTitulo = "Resumen de tus datos:";
+    const resumenTituloLines = doc.splitTextToSize(resumenTitulo, 180);
+    let resumenLines = [...resumenTituloLines];
+    datosLines.forEach((line) => {
+      const l = doc.splitTextToSize(line, 180);
+      resumenLines = resumenLines.concat(l);
+    });
+    const datosHeight = 8 + resumenLines.length * 6 + 4;
+    if (y + datosHeight > pageHeight - 20) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.roundedRect(10, y, 190, datosHeight, 4, 4, "FD");
+    doc.setTextColor(36, 123, 160);
+    doc.setFontSize(13);
+    doc.text(resumenTituloLines, 15, y + 7);
+    let yDatos = y + 7 + resumenTituloLines.length * 6;
+    doc.setFontSize(11);
+    doc.setTextColor(44, 62, 80);
+    datosLines.forEach((line) => {
+      const l = doc.splitTextToSize(line, 180);
+      doc.text(l, 17, yDatos);
+      yDatos += l.length * 6;
+    });
+    y = y + datosHeight + 2;
+
+    // --- Factores ---
+    if (factores.length > 0) {
+      const colorFondoFactores = [255, 248, 225];
+      const colorBordeFactores = [255, 183, 3];
+      const titulo = "Factores que influyen en tu riesgo:";
+      const tituloLines = doc.splitTextToSize(titulo, 180);
+
+      let lines = [...tituloLines];
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+
+      factores.forEach((f) => {
+        const fLines = doc.splitTextToSize(`- ${f.msg}`, 180);
+        lines = lines.concat(fLines);
+      });
+
+      const boxHeight = 8 + lines.length * 6 + 4;
+      if (y + boxHeight > pageHeight - 20) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFillColor(...colorFondoFactores);
+      doc.setDrawColor(...colorBordeFactores);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(10, y, 190, boxHeight, 4, 4, "FD");
+
+      let yFact = y + 7;
+      doc.setFontSize(13);
+      doc.setTextColor(255, 183, 3);
+      doc.text(tituloLines, 15, yFact);
+      yFact += tituloLines.length * 6;
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+      factores.forEach((f) => {
+        const fLines = doc.splitTextToSize(`- ${f.msg}`, 180);
+        doc.text(fLines, 17, yFact);
+        yFact += fLines.length * 6;
+      });
+      y = y + boxHeight + 2;
+    }
+
+    // --- Recomendaciones ---
+    if (recomendacionesMostradas.length > 0) {
+      const colorFondoRec = [232, 246, 255];
+      const colorBordeRec = [36, 123, 160];
+      const titulo = "Recomendaciones personalizadas:";
+      const tituloLines = doc.splitTextToSize(titulo, 180);
+
+      let lines = [...tituloLines];
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+
+      recomendacionesMostradas.forEach((rec) => {
+        const recLines = doc.splitTextToSize(`- ${rec}`, 180);
+        lines = lines.concat(recLines);
+      });
+
+      const boxHeight = 8 + lines.length * 6 + 4;
+      if (y + boxHeight > pageHeight - 20) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFillColor(...colorFondoRec);
+      doc.setDrawColor(...colorBordeRec);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(10, y, 190, boxHeight, 4, 4, "FD");
+
+      let yRec = y + 7;
+      doc.setFontSize(13);
+      doc.setTextColor(36, 123, 160);
+      doc.text(tituloLines, 15, yRec);
+      yRec += tituloLines.length * 6;
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+      recomendacionesMostradas.forEach((rec) => {
+        const recLines = doc.splitTextToSize(`- ${rec}`, 180);
+        doc.text(recLines, 17, yRec);
+        yRec += recLines.length * 6;
+      });
+      y = y + boxHeight + 2;
+    }
+
+    // --- Nota final ---
+    doc.setFontSize(10);
+    doc.setTextColor(230, 57, 70);
+    doc.text(
+      "Este resultado es solo informativo. Consulta a un profesional de salud para una evaluación completa.",
+      15,
+      y + 6
+    );
+
+    // --- Gráfico ---
+    if (stageRef?.current) {
+      const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 });
+      const imgProps = doc.getImageProperties(dataURL);
+      const pdfWidth = 180;
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      doc.addPage();
+
+      doc.setFillColor(36, 123, 160);
+      doc.rect(0, 0, 210, 18, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.text("Gráfico de comparación con personas similares", 105, 12, {
+        align: "center",
+      });
+
+      doc.addImage(dataURL, "PNG", 15, 25, pdfWidth, pdfHeight);
+
+      let leyendaY = 30 + pdfHeight;
+      let yInterpretacion = leyendaY;
+
+      const colorFondoInterpretacion = [232, 246, 255];
+      const colorBordeInterpretacion = [36, 123, 160];
+      const interpretacionTitulo = "Interpretación del gráfico";
+      const interpretacionTexto = [
+        "Este gráfico compara tu perfil con el de otras personas, basándose principalmente en el IMC, cintura y edad.",
+        "- Verde: Personas con menor riesgo de diabetes tipo 2",
+        "- Rojo: Personas con mayor riesgo de diabetes tipo 2",
+        "- Azul: Tú",
+        "",
+        "Si tu punto azul está más cerca de los rojos, tu perfil se parece al de quienes tienen más riesgo.",
+        "Si está más cerca de los verdes, se parece al de menor riesgo.",
+        "Este resultado es solo informativo. Consulta a un profesional de salud para una evaluación completa.",
+      ];
+
+      let lines = [interpretacionTitulo];
+      doc.setFontSize(11);
+      interpretacionTexto.forEach((linea) => {
+        const l = doc.splitTextToSize(linea, 180);
+        lines = lines.concat(l);
+      });
+      const boxHeight = 8 + lines.length * 6 + 4;
+
+      doc.setFillColor(...colorFondoInterpretacion);
+      doc.setDrawColor(...colorBordeInterpretacion);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(10, yInterpretacion, 190, boxHeight, 4, 4, "FD");
+
+      let yText = yInterpretacion + 7;
+      doc.setFontSize(13);
+      doc.setTextColor(36, 123, 160);
+      doc.text(interpretacionTitulo, 15, yText);
+      yText += 8;
+      doc.setFontSize(11);
+      doc.setTextColor(44, 62, 80);
+      interpretacionTexto.forEach((linea) => {
+        const l = doc.splitTextToSize(linea, 180);
+        doc.text(l, 15, yText);
+        yText += l.length * 6;
+      });
+    }
+
+    // --- Enviar PDF como base64 ---
+    const pdfBlob = doc.output("blob");
+    const reader = new FileReader();
+    reader.readAsDataURL(pdfBlob);
+
+    reader.onloadend = async () => {
+      const base64PDF = reader.result.split(",")[1];
+      try {
+        console.log("📧 email a enviar:", user.email);
+        await axios.post(
+          `${API_URL}/mail/send-pdf`,
+          { email: user.email, pdf_content: base64PDF },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        alert("📧 PDF enviado al correo ✅");
+      } catch (err) {
+        console.error("Error enviando PDF:", err.response?.data || err);
+        alert("❌ Error al enviar PDF");
+      }
+    };
   };
 
   const handleSubmit = async (e) => {
@@ -1354,12 +1650,13 @@ export default function Formulario() {
             </div>
           </div>
           {/* Botón para descargar PDF abarcando todo */}
-          <div className="flex justify-center my-8">
+          <div className="flex justify-center my-8 gap-4">
+            {/* Botón Descargar PDF */}
             <button
               onClick={handleDescargarPDF}
               className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg shadow flex items-center gap-2"
             >
-              {/* Icono PDF SVG */}
+              {/* Icono PDF */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-5 h-5"
@@ -1387,6 +1684,38 @@ export default function Formulario() {
                 </text>
               </svg>
               Descargar evaluación en PDF
+            </button>
+
+            {/* Botón Enviar PDF */}
+            <button
+              onClick={() =>
+                enviarPDFporCorreo(
+                  user,
+                  resultado,
+                  formData,
+                  campos,
+                  factores,
+                  recomendacionesMostradas,
+                  stageRef
+                )
+              }
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow flex items-center gap-2"
+            >
+              {/* Icono Correo */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M4 4h16v16H4z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+              Enviar PDF al correo
             </button>
           </div>
         </>

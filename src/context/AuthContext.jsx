@@ -15,10 +15,10 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = (newToken, username) => {
+  const login = (newToken, userData) => {
     localStorage.setItem("token", newToken);
-    localStorage.setItem("username", username);
-    setUser({ username });
+    localStorage.setItem("user", JSON.stringify(userData)); // 👉 guardamos el objeto tal cual
+    setUser(userData); // 👉 sin envolverlo
     setToken(newToken);
   };
 
