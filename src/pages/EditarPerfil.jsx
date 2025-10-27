@@ -10,6 +10,7 @@ export default function EditarPerfil() {
     email: user?.email || "",
   });
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,6 +18,7 @@ export default function EditarPerfil() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const response = await updateUserProfile(formData);
 
@@ -32,6 +34,8 @@ export default function EditarPerfil() {
       } else {
         setMessage("Error al actualizar ❌");
       }
+    } finally {
+      setLoading(false); // ✅ Termina carga
     }
   };
 
@@ -88,9 +92,12 @@ export default function EditarPerfil() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300"
+              disabled={loading}
+              className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ${
+                loading ? "opacity-70 cursor-not-allowed" : ""
+              }`}
             >
-              Guardar cambios
+              {loading ? "Guardando..." : "Guardar cambios"}
             </button>
           </form>
 

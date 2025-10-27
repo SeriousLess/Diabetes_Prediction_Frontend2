@@ -138,6 +138,7 @@ export default function Formulario() {
   });
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const [imcMode, setImcMode] = useState("directo"); // 'directo' o 'calcular'
   const [peso, setPeso] = useState(""); // en kg
@@ -563,6 +564,7 @@ export default function Formulario() {
     recomendacionesMostradas,
     stageRef
   ) => {
+    setIsSending(true);
     console.log("👤 Objeto user recibido:", user);
     const doc = new jsPDF();
     let y = 20;
@@ -844,6 +846,8 @@ export default function Formulario() {
       } catch (err) {
         console.error("Error enviando PDF:", err.response?.data || err);
         alert("❌ Error al enviar PDF");
+      } finally {
+        setIsSending(false); // ✅ Termina carga
       }
     };
   };
@@ -1686,37 +1690,42 @@ export default function Formulario() {
               Descargar evaluación en PDF
             </button>
 
-            {/* Botón Enviar PDF */}
-            <button
-              onClick={() =>
-                enviarPDFporCorreo(
-                  user,
-                  resultado,
-                  formData,
-                  campos,
-                  factores,
-                  recomendacionesMostradas,
-                  stageRef
-                )
-              }
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow flex items-center gap-2"
-            >
-              {/* Icono Correo */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {/* Botón Enviar PDF - solo si hay sesión iniciada */}
+            {user && (
+              <button
+                onClick={() =>
+                  enviarPDFporCorreo(
+                    user,
+                    resultado,
+                    formData,
+                    campos,
+                    factores,
+                    recomendacionesMostradas,
+                    stageRef
+                  )
+                }
+                disabled={isSending}
+                className={`bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow flex items-center gap-2 ${
+                  isSending ? "opacity-70 cursor-not-allowed" : ""
+                }`}
               >
-                <path d="M4 4h16v16H4z" />
-                <polyline points="22,6 12,13 2,6" />
-              </svg>
-              Enviar PDF al correo
-            </button>
+                {/* Icono Correo */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 4h16v16H4z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                {isSending ? "Enviando..." : "Enviar PDF al correo"}
+              </button>
+            )}
           </div>
         </>
       ) : null}
