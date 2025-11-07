@@ -981,6 +981,24 @@ export default function Formulario() {
                           </div>
                         </div>
 
+                        {/* Mensaje explicativo para el usuario */}
+                        <div className="flex items-start gap-2 mb-3">
+                          <svg
+                            className="w-4 h-4 mt-0.5 text-blue-500 flex-shrink-0"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                          >
+                            <circle cx="12" cy="12" r="10" strokeWidth="1.5" />
+                            <path d="M12 8v4" strokeWidth="1.5" strokeLinecap="round" />
+                            <circle cx="12" cy="16" r="0.5" />
+                          </svg>
+                          <p className="text-xs text-gray-500">
+                            Puedes ingresar tu IMC directamente o calcularlo con tu Peso y
+                            Talla. Selecciona "Calcular con Peso y Talla" para calcularlo rápidamente.
+                          </p>
+                        </div>
+
                         {imcMode === "directo" ? (
                           <div className="relative">
                             <input
@@ -1083,6 +1101,25 @@ export default function Formulario() {
                               Elegir Aproximado
                             </button>
                           </div>
+                        </div>
+
+                        {/* Mensaje explicativo para cintura */}
+                        <div className="flex items-start gap-2 mb-3">
+                          <svg
+                            className="w-4 h-4 mt-0.5 text-blue-500 flex-shrink-0"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                          >
+                            <circle cx="12" cy="12" r="10" strokeWidth="1.5" />
+                            <path d="M12 8v4" strokeWidth="1.5" strokeLinecap="round" />
+                            <circle cx="12" cy="16" r="0.5" />
+                          </svg>
+                          <p className="text-xs text-gray-500">
+                            Puedes ingresar tu medida de cintura o elegir un valor
+                            aproximado según tu sexo. Selecciona "Elegir Aproximado" para
+                            ver las opciones sugeridas.
+                          </p>
                         </div>
 
                         {waistMode === "directo" ? (
@@ -1347,7 +1384,48 @@ export default function Formulario() {
                 </button>
               </div>
             </div>
+          ) : isLoading ? (
+            <div className="bg-white rounded-xl shadow-md p-8 flex flex-col items-center justify-center h-full min-h-[300px]">
+              <div
+                className="flex flex-col items-center gap-4"
+                role="status"
+                aria-live="polite"
+              >
+                {/* Spinner circular más grande */}
+                <svg
+                  className="w-24 h-24 text-blue-600 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="5"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  />
+                </svg>
+
+                <h3 className="text-xl font-medium text-gray-900">
+                  Calculando...
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Espera mientras se procesa tu evaluación.
+                </p>                
+                <p className="mt-1 text-sm text-gray-500">
+                  La primera vez podría tardar varios segundos
+                </p>
+              </div>
+            </div>
           ) : (
+            // 👉 Bloque “Esperando datos” (el tuyo original)
             <div className="bg-white rounded-xl shadow-md p-8 flex flex-col items-center justify-center h-full min-h-[300px]">
               <div className="text-center">
                 <svg
