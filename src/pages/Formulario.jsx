@@ -17,8 +17,8 @@ const campos = {
   PAQ605: "Actividad física (1 = Varias veces por semana, 2 = Solo a veces)",
   SMQ020: "Fumador (1 = Sí, 2 = No)",
   DMDEDUC2: "Nivel educativo (1-5)",
-  INDHHIN2: "Ingreso familiar anual (1-12)",
-  SLD010H: "Horas de sueño",
+  INDHHIN2: "Ingreso familiar anual (Nivel económico del 1-12)",
+  SLD010H: "Horas de sueño (en horas)",
   HSD010: "Salud general autopercibida (1 = Excelente, 5 = Mala)",
 };
 
@@ -86,18 +86,18 @@ const opcionesCampos = {
     { label: "Universitario completo o más", value: 5 },
   ],
   INDHHIN2: [
-    { label: "Menos de S/ 25,000 al año", value: 1 },
-    { label: "S/ 25,000 - 35,000 al año", value: 2 },
-    { label: "S/ 35,000 - 45,000 al año", value: 3 },
-    { label: "S/ 45,000 - 55,000 al año", value: 4 },
-    { label: "S/ 55,000 - 65,000 al año", value: 5 },
-    { label: "S/ 65,000 - 75,000 al año", value: 6 },
-    { label: "S/ 75,000 - 85,000 al año", value: 7 },
-    { label: "S/ 85,000 - 100,000 al año", value: 8 },
-    { label: "S/ 100,000 - 120,000 al año", value: 9 },
-    { label: "S/ 120,000 - 140,000 al año", value: 10 },
-    { label: "S/ 140,000 - 160,000 al año", value: 11 },
-    { label: "Más de S/ 160,000 al año", value: 12 },
+    { label: "Nivel económico 1", value: 1 },
+    { label: "Nivel económico 2", value: 2 },
+    { label: "Nivel económico 3", value: 3 },
+    { label: "Nivel económico 4", value: 4 },
+    { label: "Nivel económico 5", value: 5 },
+    { label: "Nivel económico 6", value: 6 },
+    { label: "Nivel económico 7", value: 7 },
+    { label: "Nivel económico 8", value: 8 },
+    { label: "Nivel económico 9", value: 9 },
+    { label: "Nivel económico 10", value: 10 },
+    { label: "Nivel económico 11", value: 11 },
+    { label: "Nivel económico 12", value: 12 },
     { label: "Prefiero no responder", value: 77 },
   ],
   HSD010: [
@@ -990,12 +990,17 @@ export default function Formulario() {
                             stroke="currentColor"
                           >
                             <circle cx="12" cy="12" r="10" strokeWidth="1.5" />
-                            <path d="M12 8v4" strokeWidth="1.5" strokeLinecap="round" />
+                            <path
+                              d="M12 8v4"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                            />
                             <circle cx="12" cy="16" r="0.5" />
                           </svg>
                           <p className="text-xs text-gray-500">
-                            Puedes ingresar tu IMC directamente o calcularlo con tu Peso y
-                            Talla. Selecciona "Calcular con Peso y Talla" para calcularlo rápidamente.
+                            Puedes ingresar tu IMC directamente o calcularlo con
+                            tu Peso y Talla. Selecciona "Calcular con Peso y
+                            Talla" para calcularlo rápidamente.
                           </p>
                         </div>
 
@@ -1112,13 +1117,17 @@ export default function Formulario() {
                             stroke="currentColor"
                           >
                             <circle cx="12" cy="12" r="10" strokeWidth="1.5" />
-                            <path d="M12 8v4" strokeWidth="1.5" strokeLinecap="round" />
+                            <path
+                              d="M12 8v4"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                            />
                             <circle cx="12" cy="16" r="0.5" />
                           </svg>
                           <p className="text-xs text-gray-500">
-                            Puedes ingresar tu medida de cintura o elegir un valor
-                            aproximado según tu sexo. Selecciona "Elegir Aproximado" para
-                            ver las opciones sugeridas.
+                            Puedes ingresar tu medida de cintura o elegir un
+                            valor aproximado según tu sexo. Selecciona "Elegir
+                            Aproximado" para ver las opciones sugeridas.
                           </p>
                         </div>
 
@@ -1180,7 +1189,14 @@ export default function Formulario() {
                   }
 
                   return (
-                    <div key={key} className="space-y-1">
+                    <div
+                      key={key}
+                      className={
+                        key === "INDHHIN2"
+                          ? "space-y-1 md:col-span-2"
+                          : "space-y-1"
+                      }
+                    >
                       <label className="text-sm font-medium text-gray-700">
                         {label.split("(")[0].trim()}
                         {label.includes("(") && (
@@ -1189,21 +1205,55 @@ export default function Formulario() {
                           </span>
                         )}
                       </label>
+
                       {opcionesCampos[key] ? (
-                        <select
-                          name={key}
-                          value={formData[key]}
-                          onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          required
-                        >
-                          <option value="">Selecciona una opción</option>
-                          {opcionesCampos[key].map((op) => (
-                            <option key={op.value} value={op.value}>
-                              {op.label}
-                            </option>
-                          ))}
-                        </select>
+                        <>
+                          {/* Mensaje explicativo para INDHHIN2 colocado arriba */}
+                          {key === "INDHHIN2" && (
+                            <div className="flex items-start gap-2 mb-2">
+                              <svg
+                                className="w-4 h-4 mt-0.5 text-blue-500 flex-shrink-0"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                              >
+                                <circle
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  strokeWidth="1.5"
+                                />
+                                <path
+                                  d="M12 8v4"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                />
+                                <circle cx="12" cy="16" r="0.5" />
+                              </svg>
+                              <p className="text-xs text-gray-500">
+                                Solo usamos esta información de manera general
+                                para conocer el acceso a servicios de salud. No
+                                se comparte públicamente. Puedes elegir
+                                "Prefiero no responder" si lo prefieres.
+                              </p>
+                            </div>
+                          )}
+
+                          <select
+                            name={key}
+                            value={formData[key]}
+                            onChange={handleChange}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required={key !== "INDHHIN2"}
+                          >
+                            <option value="">Selecciona una opción</option>
+                            {opcionesCampos[key].map((op) => (
+                              <option key={op.value} value={op.value}>
+                                {op.label}
+                              </option>
+                            ))}
+                          </select>
+                        </>
                       ) : (
                         <input
                           type="number"
@@ -1418,7 +1468,7 @@ export default function Formulario() {
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
                   Espera mientras se procesa tu evaluación.
-                </p>                
+                </p>
                 <p className="mt-1 text-sm text-gray-500">
                   La primera vez podría tardar varios segundos
                 </p>
