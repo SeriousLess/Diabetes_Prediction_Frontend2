@@ -9,7 +9,7 @@ import jsPDF from "jspdf";
 import axios from "axios";
 
 const campos = {
-  RIDAGEYR: "Edad (años)",
+  RIDAGEYR: "Edad (años 16-80)",
   RIAGENDR: "Sexo (1 = Hombre, 2 = Mujer)",
   BMXBMI: "Índice de Masa Corporal",
   BMXWAIST: "Circunferencia de cintura (cm)",
@@ -18,7 +18,7 @@ const campos = {
   SMQ020: "Fumador (1 = Sí, 2 = No)",
   DMDEDUC2: "Nivel educativo (1-5)",
   INDHHIN2: "Ingreso familiar anual (Nivel económico del 1-12)",
-  SLD010H: "Horas de sueño (en horas)",
+  SLD010H: "Horas de sueño (2-12)",
   HSD010: "Salud general autopercibida (1 = Excelente, 5 = Mala)",
 };
 
@@ -86,18 +86,18 @@ const opcionesCampos = {
     { label: "Universitario completo o más", value: 5 },
   ],
   INDHHIN2: [
-    { label: "Nivel económico 1", value: 1 },
-    { label: "Nivel económico 2", value: 2 },
-    { label: "Nivel económico 3", value: 3 },
-    { label: "Nivel económico 4", value: 4 },
-    { label: "Nivel económico 5", value: 5 },
-    { label: "Nivel económico 6", value: 6 },
-    { label: "Nivel económico 7", value: 7 },
-    { label: "Nivel económico 8", value: 8 },
-    { label: "Nivel económico 9", value: 9 },
-    { label: "Nivel económico 10", value: 10 },
-    { label: "Nivel económico 11", value: 11 },
-    { label: "Nivel económico 12", value: 12 },
+    { label: "Menos de S/ 25,000 al año", value: 1 },
+    { label: "S/ 25,000 - 35,000 al año", value: 2 },
+    { label: "S/ 35,000 - 45,000 al año", value: 3 },
+    { label: "S/ 45,000 - 55,000 al año", value: 4 },
+    { label: "S/ 55,000 - 65,000 al año", value: 5 },
+    { label: "S/ 65,000 - 75,000 al año", value: 6 },
+    { label: "S/ 75,000 - 85,000 al año", value: 7 },
+    { label: "S/ 85,000 - 100,000 al año", value: 8 },
+    { label: "S/ 100,000 - 120,000 al año", value: 9 },
+    { label: "S/ 120,000 - 140,000 al año", value: 10 },
+    { label: "S/ 140,000 - 160,000 al año", value: 11 },
+    { label: "Más de S/ 160,000 al año", value: 12 },
     { label: "Prefiero no responder", value: 77 },
   ],
   HSD010: [
@@ -145,6 +145,62 @@ export default function Formulario() {
   const [talla, setTalla] = useState(""); // en cm
   const [waistMode, setWaistMode] = useState("directo"); // 'directo' o 'aproximado'
 
+  // Límites coherentes para peso y talla
+  const PESO_MIN = 30.0;
+  const PESO_MAX = 250.0;
+  const TALLA_MIN = 100.0;
+  const TALLA_MAX = 220.0;
+
+  // Errores de campo para mostrar mensajes de validación
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const handlePesoBlur = () => {
+    if (peso === "" || peso === null) return;
+    const val = Number(peso);
+    if (!isFinite(val)) {
+      setFieldErrors((s) => ({ ...s, peso: "Peso inválido" }));
+      return;
+    }
+    if (val < PESO_MIN || val > PESO_MAX) {
+      // Ajustar al rango permitido y mostrar mensaje
+      const clamped = Math.max(PESO_MIN, Math.min(PESO_MAX, val));
+      setPeso(String(clamped));
+      setFieldErrors((s) => ({
+        ...s,
+        peso: `Peso ajustado al rango permitido (${PESO_MIN}–${PESO_MAX} kg).`,
+      }));
+    } else {
+      setFieldErrors((s) => {
+        const copy = { ...s };
+        delete copy.peso;
+        return copy;
+      });
+    }
+  };
+
+  const handleTallaBlur = () => {
+    if (talla === "" || talla === null) return;
+    const val = Number(talla);
+    if (!isFinite(val)) {
+      setFieldErrors((s) => ({ ...s, talla: "Talla inválida" }));
+      return;
+    }
+    if (val < TALLA_MIN || val > TALLA_MAX) {
+      const clamped = Math.max(TALLA_MIN, Math.min(TALLA_MAX, val));
+      setTalla(String(clamped));
+      setFieldErrors((s) => ({
+        ...s,
+        talla: `Talla ajustada al rango permitido (${TALLA_MIN}–${TALLA_MAX} cm).`,
+      }));
+    } else {
+      setFieldErrors((s) => {
+        const copy = { ...s };
+        delete copy.talla;
+        return copy;
+      });
+    }
+  };
+
   const [factores, setFactores] = useState([]);
   const [recomendacionesMostradas, setRecomendacionesMostradas] = useState([]);
   const [scatterData, setScatterData] = useState([]);
@@ -161,11 +217,13 @@ export default function Formulario() {
 
   useEffect(() => {
     if (imcMode === "calcular" && peso > 0 && talla > 0) {
-      const tallaEnMetros = talla / 100;
-      const imcCalculado = peso / (tallaEnMetros * tallaEnMetros);
+      const tallaEnMetros = Number(talla) / 100;
+      const imcRaw = Number(peso) / (tallaEnMetros * tallaEnMetros);
+      // Limitar IMC al rango 15.0 - 83.0
+      const imcClamped = Math.max(15.0, Math.min(83.0, imcRaw));
       setFormData((prev) => ({
         ...prev,
-        BMXBMI: imcCalculado.toFixed(2),
+        BMXBMI: imcClamped.toFixed(2),
       }));
     }
   }, [peso, talla, imcMode]);
@@ -189,11 +247,6 @@ export default function Formulario() {
     },
   ];
 
-  const handleWaistChange = (opcion) => {
-    const sexo = Number(formData.RIAGENDR);
-    const valor = sexo === 1 ? opcion.hombre : opcion.mujer;
-    setFormData({ ...formData, BMXWAIST: valor });
-  };
   const clusterColors = {
     0: "red",
     1: "green",
@@ -272,6 +325,14 @@ export default function Formulario() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleWaistChange = (opcion) => {
+    const sexo = Number(formData.RIAGENDR);
+    const raw = sexo === 1 ? opcion.hombre : opcion.mujer;
+    // Asegura que el valor quede dentro del rango permitido 63.0 - 172.0
+    const valor = Math.max(63.0, Math.min(172.0, raw));
+    setFormData({ ...formData, BMXWAIST: valor });
   };
 
   const handleDescargarPDF = async () => {
@@ -1013,7 +1074,8 @@ export default function Formulario() {
                               onChange={handleChange}
                               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
-                              min="0"
+                              min="15.0"
+                              max="83.0"
                               step="any"
                               placeholder="Ej: 24.5"
                             />
@@ -1031,12 +1093,19 @@ export default function Formulario() {
                                 type="number"
                                 value={peso}
                                 onChange={(e) => setPeso(e.target.value)}
+                                onBlur={handlePesoBlur}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
-                                min="0"
-                                step="any"
-                                placeholder="Ej: 70"
+                                min={PESO_MIN}
+                                max={PESO_MAX}
+                                step="0.1"
+                                placeholder={`Ej: 70 (${PESO_MIN}-${PESO_MAX} kg)`}
                               />
+                              {fieldErrors.peso && (
+                                <p className="mt-1 text-xs text-red-600">
+                                  {fieldErrors.peso}
+                                </p>
+                              )}
                             </div>
                             <div>
                               <label className="text-sm font-medium text-gray-600 block mb-1">
@@ -1046,12 +1115,19 @@ export default function Formulario() {
                                 type="number"
                                 value={talla}
                                 onChange={(e) => setTalla(e.target.value)}
+                                onBlur={handleTallaBlur}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
-                                min="0"
-                                step="any"
-                                placeholder="Ej: 175"
+                                min={TALLA_MIN}
+                                max={TALLA_MAX}
+                                step="0.1"
+                                placeholder={`Ej: 175 (${TALLA_MIN}-${TALLA_MAX} cm)`}
                               />
+                              {fieldErrors.talla && (
+                                <p className="mt-1 text-xs text-red-600">
+                                  {fieldErrors.talla}
+                                </p>
+                              )}
                             </div>
                             <div className="col-span-2">
                               <label className="text-sm font-medium text-gray-600 block mb-1">
@@ -1068,6 +1144,11 @@ export default function Formulario() {
                                 readOnly
                                 className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 cursor-not-allowed"
                               />
+                              {fieldErrors.BMXBMI && (
+                                <p className="mt-2 text-xs text-red-600">
+                                  {fieldErrors.BMXBMI}
+                                </p>
+                              )}
                             </div>
                           </div>
                         )}
@@ -1140,8 +1221,8 @@ export default function Formulario() {
                               onChange={handleChange}
                               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
-                              min="30"
-                              max="250"
+                              min="63.0"
+                              max="172.0"
                               step="any"
                               placeholder="Ej: 90"
                             />
@@ -1255,6 +1336,7 @@ export default function Formulario() {
                           </select>
                         </>
                       ) : (
+                        // Campo numérico: aquí SLD010H acepta solo 2-12, otros mantienen comportamiento anterior
                         <input
                           type="number"
                           name={key}
@@ -1262,9 +1344,25 @@ export default function Formulario() {
                           onChange={handleChange}
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
-                          min="0"
+                          min={
+                            key === "SLD010H" ? 2 : key === "RIDAGEYR" ? 16 : 0
+                          }
+                          max={
+                            key === "SLD010H"
+                              ? 12
+                              : key === "RIDAGEYR"
+                              ? 80
+                              : undefined
+                          }
                           step={
                             key === "BMXBMI" || key === "BMXWAIST" ? "any" : "1"
+                          }
+                          placeholder={
+                            key === "SLD010H"
+                              ? "Ej: 7"
+                              : key === "RIDAGEYR"
+                              ? "Ej: 35"
+                              : undefined
                           }
                         />
                       )}
