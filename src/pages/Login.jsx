@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { Link } from "react-router-dom";
@@ -14,6 +14,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false); // 👈 estado de carga
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
+  const recaptchaRef = useRef(); // 👈 ref para resetear captcha
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,7 +39,7 @@ const Login = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("✅ Datos recibidos del backend en login:", data);
+        // console.log("✅ Datos recibidos del backend en login:", data);
 
         // 🔹 Llamar a /users/me para obtener email y username reales
         const meResponse = await fetch(`${API_URL}/users/me`, {
@@ -49,7 +50,7 @@ const Login = () => {
 
         if (meResponse.ok) {
           const meData = await meResponse.json();
-          console.log("📩 Datos del usuario en /me:", meData);
+          // console.log("📩 Datos del usuario en /me:", meData);
 
           // Guardar token y user completo en contexto
           login(data.access_token, meData);
@@ -62,10 +63,20 @@ const Login = () => {
       } else {
         const errorData = await response.json();
         alert("❌ Error en login: " + errorData.detail);
+        // Resetear captcha en caso de error
+        setCaptchaToken(null);
+        if (recaptchaRef.current) {
+          recaptchaRef.current.reset();
+        }
       }
     } catch (error) {
       console.error("Error:", error);
       alert("⚠️ Error al conectar con el servidor");
+      // Resetear captcha en caso de error de conexión
+      setCaptchaToken(null);
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
     } finally {
       setLoading(false); // 👈 termina la carga siempre
     }
@@ -107,6 +118,7 @@ const Login = () => {
 
           {/* 👇 Aquí el reCAPTCHA */}
           <ReCAPTCHA
+            ref={recaptchaRef}
             sitekey="6Ldt4MArAAAAAN7cAWahNmxNL4jCOJcttAx--cNz" // 👉 pon la tuya de Google
             onChange={(token) => setCaptchaToken(token)}
           />
