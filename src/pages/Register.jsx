@@ -34,7 +34,8 @@ const Register = () => {
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("⚠️ Error al conectar con el servidor");
+      //alert("⚠️ Error al conectar con el servidor");
+      alert("⚠️ Error en registro: Correo ya usado por otro usuario.");
     } finally {
       setLoading(false);
     }
