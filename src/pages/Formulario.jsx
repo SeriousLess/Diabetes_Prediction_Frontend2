@@ -1451,7 +1451,7 @@ export default function Formulario() {
                               ? "Riesgo Alto de Diabetes"
                               : nivel === "medio"
                               ? "Riesgo Intermedio"
-                              : "Sin Riesgo"}
+                              : "Bajo Riesgo"}
                           </h3>
                           <div className="text-gray-600">
                             Probabilidad:{" "}
